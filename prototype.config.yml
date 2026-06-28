@@ -1,0 +1,79 @@
+version: 1.0
+
+author: "Ayush Biswas"
+
+editor: "code {{ .FileName }}"
+
+# How to generate the destination filename.
+filename:
+  rules:
+    - site: codeforces.com
+      regex: "(?:problemset/problem|contest)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
+      template: "./src/bin/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | sanitize | to_snake_case }}.ml"
+
+    - site: atcoder.jp
+      regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"
+      template: "./src/bin/{{ index .Captures 2 }}_{{ index .Captures 3 | to_lower_case }}{{if gt (len .Title) 0}}_{{ .Title | to_snake_case }}{{- end -}}.ml"
+
+    - site: cses.fi
+      regex: "problemset/task/(\\d+)/?$"
+      template: "./src/bin/cses_{{ index .Captures 1 }}_{{ .Title | toSnakeCase }}.ml"
+
+    - site: judge.u-aizu.ac.jp
+      regex: "description\\.jsp\\?id=([A-Za-z0-9_]+)"
+      template: "./src/bin/aoj_{{ index .Captures 1 }}_{{ .Title | toKebabCase }}.ml"
+
+    - site: open.kattis.com
+      regex: "problems/([^/?]+)/?"
+      template: "./src/bin/{{ index .Captures 1 }}.ml"
+
+# Base source template.
+template:
+  source: ./src/main.ml
+  modifier: |
+    (* Created by {{ .Author }} at {{ .Time }} 
+       {{ .Url }} *)
+    {{ .Code }}
+
+# Optional code post-processing.
+code:
+  modifier: |
+    module Lib = struct
+    {{range .LibFiles}}
+    
+    module {{ .Name | toPascalCase }} = struct
+    {{.Content}}
+    end
+    
+    {{end}}
+    end
+    
+    {{ .Code }}
+
+# Library injection.
+lib:
+  regex: "open Lib"
+  include:
+    dsu: "./src/lib/dsu.ml"
+    mod: "./src/lib/mod.ml"
+    heap: "./src/lib/heap.ml"
+
+# Compilation.
+compiler:
+  name: Ocaml
+  compile: ocamlfind # empty if no compilation to be performed
+  args:
+    - ocamlopt
+    - -O2
+    - -o
+    - a.out
+    - main.ml
+    - -linkpkg
+    - -thread
+    - -package
+    - str,num,zarith,threads,containers,core,iter,batteries
+  run: ./a.out
+
+# Behaviour
+create_file: on
+run_on_save: on
