@@ -12,8 +12,20 @@
 ```bash
 cocom [options]
 
-options:
-  --config-file <file>: Path to config file
+Options:
+  -c, --config <file>
+      Path to the configuration file.
+      (default: ./cocom.yml)
+
+  -C, --root <directory>
+      Project root directory.
+      (default: current working directory)
+
+  -h, --help
+      Show this help message.
+
+  -v, --version
+      Show version information.
 ```
 
 ### Configuration
@@ -70,13 +82,14 @@ run_on_save: on
 ```
 
 ### Shortcuts
-```yaml
-- r: run
-- f: create file
-- e: show error
-- d: show diff 
-- n: new test case
-- a: answer + output
-- i: input + answer (default)
-- <space>: toggle output
+```text
+r       Run
+n       New test case
+f       Create file
+e       Show errors
+
+i       Input  | Answer
+Space   Input  | Output
+o       Answer | Output
+d       Input  | Diff
 ```
