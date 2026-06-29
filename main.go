@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	tea "charm.land/bubbletea/v2"
@@ -29,6 +30,11 @@ func main() {
 	)
 
 	if cli.Version {
+		fmt.Println("cocom version:0.0.1")
+		return
+	}
+
+	if cli.Debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
 		log.SetLevel(log.InfoLevel)
@@ -60,9 +66,17 @@ func main() {
 		utils.Unwrap("failed to decode config file", err)
 	}
 
-	log.Debug("got config", config)
+	log.Debug("got config", "config", config)
 
-	p := tea.NewProgram(app.Model{Config: config})
+	model := app.NewModel(cli.Root, config)
+	p := tea.NewProgram(model)
+
+	http.HandleFunc("/", app.HandleData(p))
+	go func() {
+		log.Fatal("http server crashed", "err",
+			http.ListenAndServe("127.0.0.1:27121", nil))
+	}()
+
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)

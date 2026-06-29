@@ -2,7 +2,7 @@ version: 1.0
 
 author: YOUR_NAME_HERE
 
-editor: "pycharm {{ .FileName }}"
+editor: "code {{ .FileName }}"
 
 # How to generate the destination filename.
 filename:

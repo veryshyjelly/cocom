@@ -89,6 +89,7 @@ n       New test case
 f       Create file
 e       Show errors
 tab     Nagivate cases
+c       Copy Solution
 q       Quit
 
 i       Input  | Answer
