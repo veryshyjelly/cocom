@@ -1,5 +1,14 @@
 package app
 
+import (
+	"os"
+
+	"github.com/goccy/go-yaml"
+)
+
+// Config represents the complete configuration for the application.
+// It bundles various settings related to authors, editors, file naming, templates, code generation,
+// external libraries, and compilation processes.
 type Config struct {
 	Author   string `yaml:"author"`
 	Editor   string `yaml:"editor"`
@@ -39,4 +48,23 @@ type Compiler struct {
 	Compile string   `yaml:"compile"`
 	Args    []string `yaml:"args"`
 	Run     string   `yaml:"run"`
+}
+
+// ReadConfig reads a YAML configuration file from the specified path.
+// It decodes the file's content into a Config struct and returns it.
+// An error is returned if the file cannot be opened or decoded.
+func ReadConfig(path string) (config Config, err error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	decoder := yaml.NewDecoder(file)
+	err = decoder.Decode(&config)
+	if err != nil {
+		return
+	}
+
+	return
 }

@@ -1,0 +1,71 @@
+version: 1.0
+
+author: YOUR_NAME_HERE
+
+editor: "pycharm {{ .FileName }}"
+
+# How to generate the destination filename.
+filename:
+  rules:
+    - site: codeforces.com
+      regex: "(?:problemset/problem|contest)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
+      template: "./src/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | sanitize | to_snake_case }}.py"
+
+    - site: atcoder.jp
+      regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"
+      template: "./src/{{ index .Captures 2 }}_{{ index .Captures 3 | to_lower_case }}{{if gt (len .Title) 0}}_{{ .Title | to_snake_case }}{{- end -}}.py"
+
+    - site: cses.fi
+      regex: "problemset/task/(\\d+)/?$"
+      template: "./src/cses_{{ index .Captures 1 }}_{{ .Title | toSnakeCase }}.py"
+
+    - site: judge.u-aizu.ac.jp
+      regex: "description\\.jsp\\?id=([A-Za-z0-9_]+)"
+      template: "./src/aoj_{{ index .Captures 1 }}_{{ .Title | toKebabCase }}.py"
+
+    - site: open.kattis.com
+      regex: "problems/([^/?]+)/?"
+      template: "./src/{{ index .Captures 1 }}.py"
+
+# Base source template.
+template:
+  source: ./src/main.py
+  modifier: |
+    # Created by {{ .Author }} at {{ .Time }} 
+    # {{ .Url }}
+    {{ .Code }}
+
+# Optional code post-processing.
+code:
+  modifier: |
+    {{range .LibFiles}}
+    
+    ### {{ .Name | toPascalCase }} ###
+    {{ .Content }}
+    ### {{ .Name | toPascalCase }} end ##
+    
+    {{end}}
+    
+    {{ .Code }}
+
+# Library injection.
+lib:
+  regex: "(from.*{{name}} import .*)|(from.*\\.{{name}} import .*)"
+  include:
+    _: "./cpio/"
+
+# Compilation.
+compiler:
+  name: Python
+  source: script.py
+  compile: python3 # empty if no compilation to be performed
+  # main.extension automatically detected as solution file
+  args:
+    - -m
+    - py_compile
+    - script.py
+  run: python3 script.py
+
+# Behaviour
+create_file: on
+run_on_save: on

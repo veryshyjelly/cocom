@@ -30,9 +30,9 @@ Options:
 
 ### Configuration
 ```yaml
-author: Ayush Biswas # your name
+author: YOUR_NAME_HERE
 # command for opening file
-editor: "code {{ .Filename }} " 
+editor: "code {{ .Filename }}" 
 
 filename: # rules for creating file
   rules:
@@ -64,6 +64,7 @@ lib: # register libraries
 compiler:
   name: Ocaml
   compile: ocamlfind # empty if no compilation to be performed
+  # main.extension automatically detected as solution file
   args:
     - ocamlopt
     - -O2
@@ -76,7 +77,7 @@ compiler:
     - str,num,zarith,threads,containers,core,iter,batteries
   run: ./a.out
 
-# control additional behaviours
+# control additional behaviors
 create_file: on
 run_on_save: on
 ```
@@ -87,6 +88,8 @@ r       Run
 n       New test case
 f       Create file
 e       Show errors
+tab     Nagivate cases
+q       Quit
 
 i       Input  | Answer
 Space   Input  | Output

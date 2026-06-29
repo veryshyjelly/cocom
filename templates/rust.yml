@@ -1,0 +1,71 @@
+version: 1.0
+
+author: YOUR_NAME_HERE
+
+editor: "code {{ .FileName }}"
+
+# How to generate the destination filename.
+filename:
+  rules:
+    - site: codeforces.com
+      regex: "(?:problemset/problem|contest)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
+      template: "./src/bin/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | sanitize | to_snake_case }}.rs"
+
+    - site: atcoder.jp
+      regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"
+      template: "./src/bin/{{ index .Captures 2 }}_{{ index .Captures 3 | to_lower_case }}{{if gt (len .Title) 0}}_{{ .Title | to_snake_case }}{{- end -}}.rs"
+
+    - site: cses.fi
+      regex: "problemset/task/(\\d+)/?$"
+      template: "./src/bin/cses_{{ index .Captures 1 }}_{{ .Title | toSnakeCase }}.rs"
+
+    - site: judge.u-aizu.ac.jp
+      regex: "description\\.jsp\\?id=([A-Za-z0-9_]+)"
+      template: "./src/bin/aoj_{{ index .Captures 1 }}_{{ .Title | toKebabCase }}.rs"
+
+    - site: open.kattis.com
+      regex: "problems/([^/?]+)/?"
+      template: "./src/bin/{{ index .Captures 1 }}.rs"
+
+# Base source template.
+template:
+  source: ./src/main.rs
+  modifier: |
+    // Created by {{ .Author }} at {{ .Time }} 
+    // {{ .Url }} 
+    {{ .Code }}
+
+# Optional code post-processing.
+code:
+  modifier: |
+    {{ .Code }}
+    
+    {{ range .LibFiles }}
+    
+    mod {{ .Name }} {
+      {{ .Content }}
+    }
+    
+    {{end}}
+
+# Library injection.
+lib:
+  regex: "use\\s*(super::)?{{name}}(::|;)"
+  include:
+    _: "./src/lib/"
+
+# Compilation.
+compiler:
+  name: Rust
+  source: main.rs
+  compile: rustc # empty if no compilation to be performed
+  # main.extension automatically detected as solution file
+  args:
+    - --edition=2024
+    - -O
+    - main.rs
+  run: ./main
+
+# Behaviour
+create_file: on
+run_on_save: on
