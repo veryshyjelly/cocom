@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"image/color"
 
 	"charm.land/lipgloss/v2"
 )
@@ -9,27 +10,32 @@ import (
 var (
 	containerStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(Theme.Fg)
+			BorderForeground(Theme.Border)
 
 	waitMessageStyle = lipgloss.NewStyle().
-				Foreground(Theme.Fg)
+				Foreground(Theme.Foreground)
 
 	headerStyle = lipgloss.NewStyle().
-			Padding(1, 0, 0).
-			Foreground(Theme.Fg).
+			Foreground(Theme.Foreground).
 			AlignHorizontal(lipgloss.Center)
 
+	labelStyle = lipgloss.NewStyle().Faint(true)
+
 	textAreaStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
 			Padding(0, 1).
-			BorderForeground(Theme.Fg)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(Theme.Border)
 )
 
 func (m Model) renderWaitMessage() string {
 	s := "Select problem from competitive companion"
-	style := waitMessageStyle.
-		Padding((m.height-lipgloss.Height(s))/2, (m.width-lipgloss.Width(s))/2)
-	return style.Render(s)
+	return lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Center,
+		lipgloss.Center,
+		waitMessageStyle.Render(s),
+	)
 }
 
 func (m Model) renderInfo() string {
@@ -56,41 +62,44 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 
 	dots := "  "
 	for i := 0; i < len(m.Tests); i++ {
+		var dot string
 		if i == m.index {
-			dots += "● "
+			dot = "● "
 		} else {
-			dots += "○ "
+			dot = "○ "
 		}
+		var clr color.Color
+		if m.Tests[i].Status == "AC" {
+			clr = lipgloss.Green
+		} else if m.Tests[i].Status == "" {
+			clr = lipgloss.White
+		} else {
+			clr = lipgloss.Red
+		}
+		dots += lipgloss.NewStyle().Foreground(clr).Render(dot)
 	}
 	dotsLayers := lipgloss.NewLayer(dots).X(m.width - lipgloss.Width(dots) - 2)
 
-	return lipgloss.NewLayer("", dotsLayers, statusLayer).Y(2)
+	return lipgloss.NewLayer("", dotsLayers, statusLayer).Y(1)
 }
 
 func (m Model) renderBody() *lipgloss.Layer {
-	style := textAreaStyle.Height(m.height - 5).Width(m.width/2 - 1)
-	headStyle := lipgloss.NewStyle().
-		Faint(true).
-		Width(style.GetWidth()).
-		AlignHorizontal(lipgloss.Center)
+	h, w := m.height-4, m.width/2
+	style := textAreaStyle.Height(h).Width(w)
 
-	labels := []string{"", ""}
-	switch m.mode {
-	case InputAnswer:
-		labels = []string{"Input", "Answer"}
-	case InputOutput:
-		labels = []string{"Input", "Output"}
-	case AnswerOutput:
-		labels = []string{"Answer", "Output"}
-	case InputDiff:
-		labels = []string{"Input", "Diff"}
-	}
+	// select the appropriate labels
+	labels := [][]string{
+		{"Input", "Answer"},
+		{"Input", "Output"},
+		{"Answer", "Output"},
+		{"Input", "Diff"},
+	}[m.mode]
 
 	// Create input layer
 	leftLayer := lipgloss.NewLayer(
 		style.Render(
 			fmt.Sprintf("%s\n%s",
-				headStyle.Render(labels[0]),
+				lipgloss.PlaceHorizontal(w-1, lipgloss.Center, labelStyle.Render(labels[0])),
 				m.leftViewPort.View(),
 			),
 		),
@@ -99,12 +108,12 @@ func (m Model) renderBody() *lipgloss.Layer {
 	rightLayer := lipgloss.NewLayer(
 		style.Render(
 			fmt.Sprintf("%s\n%s",
-				headStyle.Render(labels[1]),
+				lipgloss.PlaceHorizontal(w-1, lipgloss.Center, labelStyle.Render(labels[1])),
 				m.rightViewPort.View(),
 			),
 		),
 	).
-		X(m.width / 2)
+		X((m.width + 1) / 2)
 
-	return lipgloss.NewLayer("", leftLayer, rightLayer).Y(3)
+	return lipgloss.NewLayer("", leftLayer, rightLayer).Y(2)
 }

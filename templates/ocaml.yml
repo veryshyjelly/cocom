@@ -9,19 +9,19 @@ filename:
   rules:
     - site: codeforces.com
       regex: "(?:problemset/problem|contest)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
-      template: "./src/bin/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | sanitize | to_snake_case }}.ml"
+      template: './src/bin/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.ml'
 
     - site: atcoder.jp
       regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"
-      template: "./src/bin/{{ index .Captures 2 }}_{{ index .Captures 3 | to_lower_case }}{{if gt (len .Title) 0}}_{{ .Title | to_snake_case }}{{- end -}}.ml"
+      template: './src/bin/{{ index .Captures 2 }}_{{ index .Captures 3 | toLowerCase }}{{if gt (.Title | stripPrefix "-" | len) 0}}_{{ .Title | stripPrefix "-" | toSnakeCase }}{{- end -}}.ml'
 
     - site: cses.fi
       regex: "problemset/task/(\\d+)/?$"
-      template: "./src/bin/cses_{{ index .Captures 1 }}_{{ .Title | toSnakeCase }}.ml"
+      template: './src/bin/cses_{{ index .Captures 1 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.ml'
 
     - site: judge.u-aizu.ac.jp
       regex: "description\\.jsp\\?id=([A-Za-z0-9_]+)"
-      template: "./src/bin/aoj_{{ index .Captures 1 }}_{{ .Title | toKebabCase }}.ml"
+      template: './src/bin/aoj_{{ index .Captures 1 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.ml'
 
     - site: open.kattis.com
       regex: "problems/([^/?]+)/?"

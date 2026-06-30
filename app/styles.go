@@ -7,24 +7,20 @@ import (
 )
 
 type ColorScheme struct {
-	Bg        color.Color
-	Fg        color.Color
-	Primary   color.Color
-	Secondary color.Color
-	Accent    color.Color
-	Success   color.Color
-	Warning   color.Color
-	Error     color.Color
+	Foreground color.Color
+	Border     color.Color
+	Success    color.Color
+	Warning    color.Color
+	Error      color.Color
 }
 
 var (
 	Gold = ColorScheme{
-		Fg:        lipgloss.Color("#FAE7CB"),
-		Primary:   lipgloss.Color("#59B292"),
-		Secondary: lipgloss.Color("#FFC94D"),
-		Success:   lipgloss.Green,
-		Warning:   lipgloss.BrightCyan,
-		Error:     lipgloss.Color("#FA6781"),
+		Foreground: lipgloss.White,
+		Border:     lipgloss.Color("#FAE7CB"),
+		Success:    lipgloss.Green,
+		Warning:    lipgloss.BrightCyan,
+		Error:      lipgloss.Color("#FA6781"),
 	}
 )
 

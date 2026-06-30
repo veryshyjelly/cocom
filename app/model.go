@@ -98,9 +98,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.rightViewPort = viewport.New()
 			m.rightViewPort.YPosition = 4
 		}
-		m.width = msg.Width
+		m.width = msg.Width - 2
 		m.height = msg.Height - 2
 		m.setLayout()
+		m.updatePanes()
 	case tea.MouseMsg:
 		if m.rightPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
 			m.rightViewPort, cmd = m.rightViewPort.Update(msg)
@@ -116,17 +117,20 @@ func (m Model) View() tea.View {
 	var s string
 
 	if m.Url == "" {
-		s += m.renderWaitMessage()
+		s = m.renderWaitMessage()
 	} else {
-		s += m.renderInfo()
+		s = m.renderInfo()
 	}
 
 	s = containerStyle.
-		Height(m.height).
-		Width(m.width).
+		Height(m.height + 2).
+		Width(m.width + 2).
 		Render(s)
 
-	return tea.NewView(s)
+	v := tea.NewView(s)
+	v.MouseMode = tea.MouseModeCellMotion
+	v.AltScreen = true
+	return v
 }
 
 // updatePanes updates the content of the left and right viewports based on the current display mode.
@@ -137,6 +141,10 @@ func (m Model) View() tea.View {
 // For AnswerOutput mode, it shows the test case's Answer and Output.
 // For InputDiff mode, it displays the test case's Input and Answer.
 func (m *Model) updatePanes() {
+	if len(m.Tests) == 0 {
+		return
+	}
+
 	testCase := m.Tests[m.index]
 	if m.mode == InputOutput {
 		m.leftViewPort.SetContent(testCase.Input)
@@ -159,17 +167,17 @@ func (m *Model) setLayout() {
 	m.leftPane = Rect{
 		X: 0,
 		Y: 3,
-		W: m.width/2 - 1,
-		H: m.height - 5,
+		W: m.width / 2,
+		H: m.height - 4,
 	}
 	m.leftViewPort.SetWidth(m.leftPane.W)
 	m.leftViewPort.SetHeight(m.leftPane.H - 1)
 
 	m.rightPane = Rect{
-		X: m.width / 2,
+		X: (m.width + 1) / 2,
 		Y: 3,
-		W: m.width/2 - 1,
-		H: m.height - 5,
+		W: m.width / 2,
+		H: m.height - 4,
 	}
 	m.rightViewPort.SetWidth(m.rightPane.W)
 	m.rightViewPort.SetHeight(m.rightPane.H - 1)
