@@ -15,7 +15,7 @@ type Info struct {
 	Interactive bool   `json:"interactive"`
 	MemoryLimit uint64 `json:"memory_limit"`
 	TimeLimit   uint64 `json:"time_limit"`
-	Tests       []Test `json:"test"`
+	Tests       []Test `json:"tests"`
 }
 
 type Test struct {
@@ -38,7 +38,7 @@ func HandleData(p *tea.Program) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func setProblem(info Info, m Model) Model {
+func (m *Model) setProblem(info Info) {
 	// Fill problem and test case in model
 	m.Problem = Problem{
 		Title:       info.Name,
@@ -47,13 +47,11 @@ func setProblem(info Info, m Model) Model {
 		TimeLimit:   info.TimeLimit,
 	}
 
-	m.Tests = make([]Testcase, len(m.Tests))
-	for i, t := range info.Tests {
-		m.Tests[i] = Testcase{
+	m.Tests = make([]Testcase, 0, len(info.Tests))
+	for _, t := range info.Tests {
+		m.Tests = append(m.Tests, Testcase{
 			Input:  t.Input,
-			Output: t.Output,
-		}
+			Answer: t.Output,
+		})
 	}
-
-	return m
 }

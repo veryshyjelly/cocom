@@ -1,5 +1,7 @@
 package app
 
+import tea "charm.land/bubbletea/v2"
+
 type Problem struct {
 	Title       string
 	Url         string
@@ -20,6 +22,6 @@ func (m Model) Compile() error {
 	return nil
 }
 
-func (m Model) Run() error {
+func (m Model) Run() tea.Msg {
 	return nil
 }

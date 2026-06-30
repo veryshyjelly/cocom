@@ -11,7 +11,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/veryshyjelly/cocom/app"
 	"github.com/veryshyjelly/cocom/templates"
-	"github.com/veryshyjelly/cocom/utils"
 )
 
 // CLI represents the command-line interface arguments and flags for the application.
@@ -52,18 +51,18 @@ func main() {
 				huh.NewOption[string]("Ocaml", "ocaml"),
 			).Value(&language).
 			Run()
-		utils.Unwrap("can't get language of choice", err)
+		Unwrap("can't get language of choice", err)
 		data, err := templates.FS.ReadFile(language + ".yml")
-		utils.Unwrap("failed to read config template", err)
+		Unwrap("failed to read config template", err)
 
 		err = os.WriteFile(cli.Config, data, 0644)
-		utils.Unwrap("failed to write config template", err)
+		Unwrap("failed to write config template", err)
 
 		log.Info("config template copied, please edit it before running the program again")
 
 		os.Exit(0)
 	} else if err != nil {
-		utils.Unwrap("failed to decode config file", err)
+		Unwrap("failed to decode config file", err)
 	}
 
 	log.Debug("got config", "config", config)

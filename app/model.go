@@ -1,7 +1,7 @@
 package app
 
 import (
-	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -9,25 +9,42 @@ type Model struct {
 	Root string
 	Config
 	Problem
-	Tests   []Testcase
-	height  int
-	width   int
-	spinner spinner.Model
+	Tests []Testcase
+
+	status string
+	index  int
+	height int
+	width  int
+
+	leftViewPort  viewport.Model
+	rightViewPort viewport.Model
+	ready         bool
+
+	leftPane  Rect
+	rightPane Rect
+
+	mode Mode
 }
 
-func NewModel(root string, config Config) Model {
-	spin := spinner.New(spinner.WithSpinner(spinner.Pulse))
-	spin.Style = spinnerStyle
+type Mode int
 
+const (
+	InputAnswer Mode = iota
+	InputOutput
+	AnswerOutput
+	InputDiff
+)
+
+func NewModel(root string, config Config) Model {
 	return Model{
-		Root:    root,
-		Config:  config,
-		spinner: spin,
+		Root:   root,
+		Config: config,
+		status: "NA",
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return m.spinner.Tick
+	return nil
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -35,16 +52,61 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
+		/*
+			Functionality
+		*/
+		case "r":
+			return m, m.Run
+		case "f":
+			return m, m.CreateFile
+		/*
+			Handle Navigation
+		*/
+		case "space":
+			if m.mode == InputAnswer {
+				m.mode = InputOutput
+			} else {
+				m.mode = InputAnswer
+			}
+		case "o":
+			if m.mode != AnswerOutput {
+				m.mode = AnswerOutput
+			} else {
+				m.mode = InputAnswer
+			}
+		case "d":
+			if m.mode != InputDiff {
+				m.mode = InputDiff
+			} else {
+				m.mode = InputAnswer
+			}
+		case "tab":
+			m.index = (m.index + 1) % len(m.Tests)
+		case "shift+tab":
+			m.index = (m.index - 1 + len(m.Tests)) % len(m.Tests)
 		}
+		m.updatePanes()
 	case Info:
-		m = setProblem(msg, m)
-	case spinner.TickMsg:
-		m.spinner, cmd = m.spinner.Update(msg)
+		m.setProblem(msg)
+		m.updatePanes()
 	case tea.WindowSizeMsg:
+		if !m.ready {
+			m.leftViewPort = viewport.New()
+			m.leftViewPort.YPosition = 4
+			m.rightViewPort = viewport.New()
+			m.rightViewPort.YPosition = 4
+		}
 		m.width = msg.Width
-		m.height = msg.Height
+		m.height = msg.Height - 2
+		m.setLayout()
+	case tea.MouseMsg:
+		if m.rightPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
+			m.rightViewPort, cmd = m.rightViewPort.Update(msg)
+		} else if m.leftPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
+			m.leftViewPort, cmd = m.leftViewPort.Update(msg)
+		}
 	}
 
 	return m, cmd
@@ -60,9 +122,55 @@ func (m Model) View() tea.View {
 	}
 
 	s = containerStyle.
-		Height(m.height - 2).
-		Width(m.width - 2).
+		Height(m.height).
+		Width(m.width).
 		Render(s)
 
 	return tea.NewView(s)
+}
+
+// updatePanes updates the content of the left and right viewports based on the current display mode.
+// It retrieves the test case specified by the model's current index.
+// The content displayed in each viewport depends on the value of `m.mode`.
+// For InputOutput mode, it shows the test case's Input and Output.
+// For InputAnswer mode, it shows the test case's Input and Answer.
+// For AnswerOutput mode, it shows the test case's Answer and Output.
+// For InputDiff mode, it displays the test case's Input and Answer.
+func (m *Model) updatePanes() {
+	testCase := m.Tests[m.index]
+	if m.mode == InputOutput {
+		m.leftViewPort.SetContent(testCase.Input)
+		m.rightViewPort.SetContent(testCase.Output)
+	} else if m.mode == InputAnswer {
+		m.leftViewPort.SetContent(testCase.Input)
+		m.rightViewPort.SetContent(testCase.Answer)
+	} else if m.mode == AnswerOutput {
+		m.leftViewPort.SetContent(testCase.Answer)
+		m.rightViewPort.SetContent(testCase.Output)
+	} else if m.mode == InputDiff {
+		m.leftViewPort.SetContent(testCase.Input)
+		m.rightViewPort.SetContent(testCase.Answer)
+	}
+}
+
+// setLayout calculates and sets the dimensions and positions of the left and right display panes.
+// // It updates the size of the corresponding viewports based on the model's current width and height.
+func (m *Model) setLayout() {
+	m.leftPane = Rect{
+		X: 0,
+		Y: 3,
+		W: m.width/2 - 1,
+		H: m.height - 5,
+	}
+	m.leftViewPort.SetWidth(m.leftPane.W)
+	m.leftViewPort.SetHeight(m.leftPane.H - 1)
+
+	m.rightPane = Rect{
+		X: m.width / 2,
+		Y: 3,
+		W: m.width/2 - 1,
+		H: m.height - 5,
+	}
+	m.rightViewPort.SetWidth(m.rightPane.W)
+	m.rightViewPort.SetHeight(m.rightPane.H - 1)
 }
