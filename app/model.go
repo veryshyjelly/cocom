@@ -1,6 +1,8 @@
 package app
 
 import (
+	"slices"
+
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 )
@@ -31,6 +33,7 @@ type Mode int
 const (
 	InputAnswer Mode = iota
 	InputOutput
+	InputError
 	AnswerOutput
 	InputDiff
 )
@@ -58,6 +61,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Functionality
 		*/
 		case "r":
+			m.status = "WAP"
 			return m, m.run
 		case "f":
 			return m, m.createFile
@@ -82,14 +86,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.mode = InputAnswer
 			}
+		case "e":
+			if m.mode != InputError {
+				m.mode = InputError
+			} else {
+				m.mode = InputAnswer
+			}
 		case "tab":
 			m.index = (m.index + 1) % len(m.Tests)
-		case "shift+tab":
+		case "shift+tab", "backspace":
 			m.index = (m.index - 1 + len(m.Tests)) % len(m.Tests)
 		}
 		m.updatePanes()
 	case Info:
 		m.setProblem(msg)
+		if m.Config.CreateFile {
+			m.createFile()
+		}
 		m.updatePanes()
 	case tea.WindowSizeMsg:
 		if !m.ready {
@@ -108,6 +121,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.rightViewPort, cmd = m.rightViewPort.Update(msg)
 		} else if m.leftPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
 			m.leftViewPort, cmd = m.leftViewPort.Update(msg)
+		}
+	case []Testcase:
+		m.Tests = msg
+		switch {
+		case slices.ContainsFunc(m.Tests,
+			func(t Testcase) bool { return t.Status == "CE" }):
+			m.status = "CE"
+		case slices.ContainsFunc(m.Tests,
+			func(t Testcase) bool { return t.Status == "RE" }):
+			m.status = "RE"
+		case slices.ContainsFunc(m.Tests,
+			func(t Testcase) bool { return t.Status == "WA" }):
+			m.status = "WA"
+		default:
+			m.status = "AC"
 		}
 	}
 
@@ -151,12 +179,16 @@ func (m *Model) updatePanes() {
 	testCase := m.Tests[m.index]
 	input, output, answer := wrapContent(testCase.Input, width),
 		wrapContent(testCase.Output, width), wrapContent(testCase.Answer, width)
+	erro := wrapContent(testCase.Error, width)
 	if m.mode == InputOutput {
 		m.leftViewPort.SetContent(input)
 		m.rightViewPort.SetContent(output)
 	} else if m.mode == InputAnswer {
 		m.leftViewPort.SetContent(input)
 		m.rightViewPort.SetContent(answer)
+	} else if m.mode == InputError {
+		m.leftViewPort.SetContent(input)
+		m.rightViewPort.SetContent(erro)
 	} else if m.mode == AnswerOutput {
 		m.leftViewPort.SetContent(answer)
 		m.rightViewPort.SetContent(output)

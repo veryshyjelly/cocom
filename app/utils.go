@@ -10,6 +10,11 @@ import (
 	"github.com/ettle/strcase"
 )
 
+var (
+	fff, _ = os.Create("/tmp/cocom.log")
+	logger = log.New(fff)
+)
+
 var funcMap = template.FuncMap{
 	"toKebabCase":  strcase.ToKebab,
 	"toCamelCase":  strcase.ToCamel,
@@ -17,10 +22,12 @@ var funcMap = template.FuncMap{
 	"toPascalCase": strcase.ToPascal,
 	"toKEBABCase":  strcase.ToKEBAB,
 	"toSNAKECase":  strcase.ToSNAKE,
+	"toLowerCase":  strings.ToLower,
+	"toUpperCase":  strings.ToUpper,
 	"stripPrefix":  stripPrefix,
 }
 
-func stripPrefix(title, delim string) string {
+func stripPrefix(delim, title string) string {
 	parts := strings.SplitN(title, delim, 2)
 	if len(parts) == 2 {
 		return strings.TrimSpace(parts[1])
@@ -73,7 +80,8 @@ func extractCodeBlock(source string) string {
 
 func unwrap(message string, err error) {
 	if err != nil {
-		log.Error(message, "err", err)
+		logger.Error(message, "err", err)
+		fff.Close()
 		os.Exit(1)
 	}
 }

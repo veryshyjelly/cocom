@@ -67,5 +67,5 @@ compiler:
   run: ./main
 
 # Behaviour
-create_file: on
-run_on_save: on
+create_file: true
+run_on_save: true

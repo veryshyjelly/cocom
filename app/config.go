@@ -10,13 +10,15 @@ import (
 // It bundles various settings related to authors, editors, file naming, templates, code generation,
 // external libraries, and compilation processes.
 type Config struct {
-	Author   string `yaml:"author"`
-	Editor   string `yaml:"editor"`
-	Filename `yaml:"filename"`
-	Template `yaml:"template"`
-	Code     `yaml:"code"`
-	Lib      `yaml:"lib"`
-	Compiler `yaml:"compiler"`
+	Author     string `yaml:"author"`
+	Editor     string `yaml:"editor"`
+	Filename   `yaml:"filename"`
+	Template   `yaml:"template"`
+	Code       `yaml:"code"`
+	Lib        `yaml:"lib"`
+	Compiler   `yaml:"compiler"`
+	CreateFile bool `yaml:"create_file"`
+	RunOnSave  bool `yaml:"run_on_save"`
 }
 
 type Filename struct {
@@ -45,6 +47,7 @@ type Lib struct {
 
 type Compiler struct {
 	Name    string   `yaml:"name"`
+	Source  string   `yaml:"source"`
 	Compile string   `yaml:"compile"`
 	Args    []string `yaml:"args"`
 	Run     string   `yaml:"run"`

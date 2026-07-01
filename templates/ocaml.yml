@@ -2,7 +2,7 @@ version: 1.0
 
 author: YOUR_NAME_HERE
 
-editor: "code {{ .FileName }}"
+editor: "code {{ .Filename }}"
 
 # How to generate the destination filename.
 filename:
@@ -77,5 +77,5 @@ compiler:
   run: ./a.out
 
 # Behaviour
-create_file: on
-run_on_save: on
+create_file: true
+run_on_save: true

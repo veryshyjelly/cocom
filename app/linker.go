@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 	"text/template"
 	"time"
 
-	"charm.land/log/v2"
 	"github.com/samber/lo"
 )
 
@@ -28,8 +28,8 @@ type node struct {
 // getSolution processes the main code, linked libraries,
 // and headers to generate a final solution string.
 func (m Model) getSolution() string {
-	code, err := os.ReadFile(m.getFileName())
-	unwrap("couldn't read file", err)
+	code, err := os.ReadFile(filepath.Join(m.Root, m.getFileName()))
+	unwrap("couldn't read file in getSolution", err)
 	// get the lib files in topo sorted order
 	libFiles := m.linkFiles()
 	libCode := lo.Map(libFiles, // extract out the code blocks
@@ -70,8 +70,8 @@ func (m Model) getSolution() string {
 // to order the libraries. It detects and reports cyclic dependencies, exiting on discovery.
 // The result is a slice of Library structs, ordered such that dependencies appear before their dependents.
 func (m Model) linkFiles() []Library {
-	rootFile, err := os.ReadFile(m.getFileName())
-	unwrap("couldn't read file", err)
+	rootFile, err := os.ReadFile(filepath.Join(m.Root, m.getFileName()))
+	unwrap("couldn't read file in linkFiles", err)
 
 	nodes := lo.MapEntries(m.getLibFiles(),
 		func(name, content string) (string, *node) {
@@ -111,7 +111,7 @@ func (m Model) linkFiles() []Library {
 	var dfs func(string)
 	dfs = func(name string) {
 		if state[name] == gray {
-			log.Error("cyclic library dependency")
+			logger.Error("cyclic library dependency")
 			os.Exit(1)
 		} else if state[name] == black {
 			return

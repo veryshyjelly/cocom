@@ -54,6 +54,8 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 	status := m.status
 	if status == "NA" {
 		status = style.Faint(true).Render(status)
+	} else if status == "WAP" {
+		status = style.Faint(true).Foreground(Theme.Foreground).Render(status)
 	} else if status == "AC" {
 		status = style.Foreground(Theme.Success).Render(status)
 	} else {
@@ -92,6 +94,7 @@ func (m Model) renderBody() *lipgloss.Layer {
 	labels := [][]string{
 		{"Input", "Answer"},
 		{"Input", "Output"},
+		{"Input", "Error"},
 		{"Answer", "Output"},
 		{"Input", "Diff"},
 	}[m.mode]

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -12,24 +13,44 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/log/v2"
+	"github.com/google/shlex"
 )
 
 func (m Model) createFile() tea.Msg {
-	filename := m.getFileName()
+	filename := filepath.Join(m.Root, m.getFileName())
+
+	defer func() {
+		if m.Config.Editor != "" {
+			var editor bytes.Buffer
+			err := template.Must(template.New("editor").
+				Funcs(funcMap).
+				Parse(m.Config.Editor)).Execute(&editor, map[string]interface{}{
+				"Filename": filename,
+			})
+			unwrap("couldn't render editor template", err)
+			args, err := shlex.Split(editor.String())
+			logger.Debug("executing editor", "args", args)
+			unwrap("couldn't parse editor template", err)
+			cmd := exec.Command(args[0], args[1:]...)
+			cmd.Dir = m.Root
+			err = cmd.Run()
+			unwrap("couldn't open editor", err)
+		}
+	}()
 
 	// if the file already exists then we ought not do anything
 	_, err := os.ReadFile(filename)
 	if err == nil {
 		return nil
 	}
+
 	// now create the file
 	file, err := os.Create(filename)
 	unwrap("couldn't create file", err)
 	defer file.Close()
 	// if template is provided then fill the new file with template
 	if m.Template.Source != "" {
-		templ, err := os.ReadFile(m.Template.Source)
+		templ, err := os.ReadFile(filepath.Join(m.Root, m.Template.Source))
 		unwrap("couldn't open template", err)
 		// render the template modifier and write directly in the file
 		modifier := m.Template.Modifier
@@ -44,6 +65,8 @@ func (m Model) createFile() tea.Msg {
 		unwrap("couldn't write template", err)
 	}
 
+	logger.Info("created file", "filename", filename)
+
 	return nil
 }
 
@@ -54,7 +77,7 @@ func (m Model) getFileName() string {
 	// find the rule satisfying this url
 	index := slices.IndexFunc(m.Rules, func(r Rule) bool { return r.Site == host })
 	if index == -1 {
-		log.Error("could not find a rule matching site", "site", m.Url)
+		logger.Error("could not find a rule matching site", "site", m.Url)
 		os.Exit(1)
 	}
 	// parse template for this rule
@@ -80,8 +103,9 @@ func (m Model) getLibFiles() map[string]string {
 	extension := filepath.Ext(m.getFileName())
 	libFiles := make(map[string]string)
 	for name, location := range m.Lib.Include {
+		location = filepath.Join(m.Root, location)
 		stat, err := os.Stat(location)
-		unwrap("invalid location", err)
+		unwrap("couldn't state lib file", err)
 		if stat.IsDir() {
 			dir, err := os.ReadDir(location)
 			unwrap("couldn't read lib directory", err)
