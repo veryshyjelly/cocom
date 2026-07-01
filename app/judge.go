@@ -25,9 +25,20 @@ type Testcase struct {
 	Output string
 	Error  string
 	Answer string
-	Status string
+	Status Status
 	Time   float64
 }
+
+type Status string
+
+const (
+	NotAvailable     Status = "NA"
+	Accepted         Status = "AC"
+	RuntimeError     Status = "RE"
+	CompilationError Status = "CE"
+	WrongAnswer      Status = "WA"
+	Running          Status = "WIP"
+)
 
 func (m Model) compile() (string, error) {
 	log.Debug("creating sandbox directory")
@@ -62,7 +73,7 @@ func (m Model) run() tea.Msg {
 	defer os.RemoveAll(dir)
 	if err != nil {
 		for i := range tests {
-			tests[i].Status = "CE"
+			tests[i].Status = CompilationError
 			tests[i].Error = err.Error()
 		}
 		return tests
@@ -84,11 +95,11 @@ func (m Model) run() tea.Msg {
 		tests[i].Output = stdout.String()
 		tests[i].Error = stderr.String()
 		if err != nil {
-			tests[i].Status = "RE"
+			tests[i].Status = RuntimeError
 		} else if strings.TrimSpace(tests[i].Output) == strings.TrimSpace(tests[i].Answer) {
-			tests[i].Status = "AC"
+			tests[i].Status = Accepted
 		} else {
-			tests[i].Status = "WA"
+			tests[i].Status = WrongAnswer
 		}
 	}
 

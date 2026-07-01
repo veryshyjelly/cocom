@@ -3,6 +3,7 @@ package app
 import (
 	"slices"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 )
@@ -13,7 +14,7 @@ type Model struct {
 	Problem
 	Tests []Testcase
 
-	status string
+	status Status
 	index  int
 	height int
 	width  int
@@ -36,13 +37,14 @@ const (
 	InputError
 	AnswerOutput
 	InputDiff
+	ShowHelp
 )
 
 func NewModel(root string, config Config) Model {
 	return Model{
 		Root:   root,
 		Config: config,
-		status: "NA",
+		status: NotAvailable,
 	}
 }
 
@@ -54,52 +56,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		switch {
+		case key.Matches(msg, DefaultKeyMap.Quit):
 			return m, tea.Quit
-		/*
-			Functionality
-		*/
-		case "r":
-			m.status = "WAP"
+		case key.Matches(msg, DefaultKeyMap.Run) && len(m.Tests) > 0:
+			m.status = Running
 			return m, m.run
-		case "f":
+		case key.Matches(msg, DefaultKeyMap.CreateFile):
 			return m, m.createFile
-		/*
-			Handle Navigation
-		*/
-		case "space":
-			if m.mode == InputAnswer {
-				m.mode = InputOutput
-			} else {
-				m.mode = InputAnswer
-			}
-		case "o":
-			if m.mode != AnswerOutput {
-				m.mode = AnswerOutput
-			} else {
-				m.mode = InputAnswer
-			}
-		case "d":
-			if m.mode != InputDiff {
-				m.mode = InputDiff
-			} else {
-				m.mode = InputAnswer
-			}
-		case "e":
-			if m.mode != InputError {
-				m.mode = InputError
-			} else {
-				m.mode = InputAnswer
-			}
-		case "tab":
+		case key.Matches(msg, DefaultKeyMap.InputAnswer):
+			m.mode = InputAnswer
+		case key.Matches(msg, DefaultKeyMap.InputOutput):
+			m.mode = InputOutput
+		case key.Matches(msg, DefaultKeyMap.InputError):
+			m.mode = InputError
+		case key.Matches(msg, DefaultKeyMap.InputDiff):
+			m.mode = InputDiff
+		case key.Matches(msg, DefaultKeyMap.AnswerOutput):
+			m.mode = AnswerOutput
+		case key.Matches(msg, DefaultKeyMap.NextCase) && len(m.Tests) > 0:
 			m.index = (m.index + 1) % len(m.Tests)
-		case "shift+tab", "backspace":
+		case key.Matches(msg, DefaultKeyMap.PreviousCase) && len(m.Tests) > 0:
 			m.index = (m.index - 1 + len(m.Tests)) % len(m.Tests)
+		case key.Matches(msg, DefaultKeyMap.Help):
+			m.mode = ShowHelp - m.mode/ShowHelp
 		}
 		m.updatePanes()
 	case Info:
-		m.status = "NA"
+		m.status = NotAvailable
 		m.setProblem(msg)
 		if m.Config.CreateFile {
 			m.createFile()
@@ -127,26 +111,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Tests = msg
 		switch {
 		case slices.ContainsFunc(m.Tests,
-			func(t Testcase) bool { return t.Status == "CE" }):
-			m.status = "CE"
+			func(t Testcase) bool { return t.Status == CompilationError }):
+			m.status = CompilationError
 		case slices.ContainsFunc(m.Tests,
-			func(t Testcase) bool { return t.Status == "RE" }):
-			m.status = "RE"
+			func(t Testcase) bool { return t.Status == RuntimeError }):
+			m.status = RuntimeError
 		case slices.ContainsFunc(m.Tests,
-			func(t Testcase) bool { return t.Status == "WA" }):
-			m.status = "WA"
+			func(t Testcase) bool { return t.Status == WrongAnswer }):
+			m.status = WrongAnswer
 		default:
-			m.status = "AC"
+			m.status = Accepted
 		}
 	}
 
 	return m, cmd
 }
 
+// View renders the current state of the Model into a tea.View for display.
+// It conditionally renders help, a wait message, or information based on the model's state.
+// The rendered content is wrapped within a styled container.
+// The returned view is configured for cell motion mouse mode and uses the alternate screen buffer.
 func (m Model) View() tea.View {
 	var s string
 
-	if m.Url == "" {
+	if m.mode == ShowHelp {
+		s = m.renderHelp()
+	} else if m.Url == "" {
 		s = m.renderWaitMessage()
 	} else {
 		s = m.renderInfo()

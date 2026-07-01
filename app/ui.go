@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"strings"
 
+	"charm.land/bubbles/v2/help"
 	"charm.land/lipgloss/v2"
 )
 
@@ -30,13 +31,20 @@ var (
 
 func (m Model) renderWaitMessage() string {
 	s := "Select problem from competitive companion"
-	return lipgloss.Place(
+	content := lipgloss.NewLayer(lipgloss.Place(
 		m.width,
 		m.height,
 		lipgloss.Center,
 		lipgloss.Center,
 		waitMessageStyle.Render(s),
-	)
+	))
+	h := help.New()
+	h.SetWidth(m.width)
+	helpLayer := lipgloss.NewLayer(
+		lipgloss.PlaceHorizontal(m.width, lipgloss.Center,
+			h.View(DefaultKeyMap)),
+	).Y(m.height - 1)
+	return lipgloss.NewCompositor(content, helpLayer).Render()
 }
 
 func (m Model) renderInfo() string {
@@ -46,19 +54,22 @@ func (m Model) renderInfo() string {
 
 func (m Model) renderHeader() *lipgloss.Layer {
 	content := headerStyle.Width(m.width).Render(m.Title)
+	//message := labelStyle.Render("? toggle help")
+	//helpLayer := lipgloss.NewLayer(message).X(m.width - lipgloss.Width(message) - 1)
 	return lipgloss.NewLayer(content)
 }
 
 func (m Model) renderMiddle() *lipgloss.Layer {
 	style := lipgloss.NewStyle()
-	status := m.status
-	if status == "NA" {
+	status := string(m.status)
+	switch m.status {
+	case NotAvailable:
 		status = style.Faint(true).Render(status)
-	} else if status == "WAP" {
+	case Running:
 		status = style.Faint(true).Foreground(Theme.Warning).Render(status)
-	} else if status == "AC" {
+	case Accepted:
 		status = style.Foreground(Theme.Success).Render(status)
-	} else {
+	default:
 		status = style.Foreground(Theme.Error).Render(status)
 	}
 	statusLayer := lipgloss.NewLayer("Status: " + status).X(1)
