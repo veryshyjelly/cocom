@@ -58,7 +58,7 @@ func (m Model) createFile() tea.Msg {
 			Funcs(funcMap).
 			Parse(modifier)).Execute(file, map[string]interface{}{
 			"Author": m.Author,
-			"Time":   time.Now(),
+			"Time":   time.Now().Format("2006/01/02 15:04"),
 			"Url":    m.Url,
 			"Code":   string(templ),
 		})

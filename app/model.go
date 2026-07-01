@@ -52,6 +52,9 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
+// Update handles messages and updates the model, returning the updated model and a command.
+// It processes key presses, window size changes, mouse events, and test case results.
+// The method updates the model's state, status, viewports, and active test case index.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
@@ -194,10 +197,11 @@ func (m *Model) updatePanes() {
 func (m *Model) setLayout() {
 	m.leftPane = Rect{
 		X: 0,
-		Y: 4,
+		Y: 5,
 		// 2 for padding and 2 for border
 		W: m.width/2 - 4,
-		H: m.height - 4,
+		// 2 for border 2 for heading and 1 for status
+		H: m.height - 5,
 	}
 	// 1 for label
 	m.leftViewPort.SetHeight(m.leftPane.H - 1)
@@ -205,10 +209,11 @@ func (m *Model) setLayout() {
 
 	m.rightPane = Rect{
 		X: (m.width + 1) / 2,
-		Y: 4,
+		Y: 5,
 		// 2 for padding and 2 for border
 		W: m.width/2 - 4,
-		H: m.height - 4,
+		// 2 for border 2 for heading and 1 for status
+		H: m.height - 5,
 	}
 	// 1 for label
 	m.rightViewPort.SetHeight(m.rightPane.H - 1)

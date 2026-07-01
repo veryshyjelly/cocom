@@ -7,10 +7,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
 	"github.com/google/shlex"
+	"github.com/veryshyjelly/cocom/app/memory"
 )
 
 type Problem struct {
@@ -27,6 +29,7 @@ type Testcase struct {
 	Answer string
 	Status Status
 	Time   float64
+	Memory uint64 // in kbs
 }
 
 type Status string
@@ -91,7 +94,12 @@ func (m Model) run() tea.Msg {
 		cmd.Stdin = strings.NewReader(tests[i].Input)
 		cmd.Stdout = &stdout
 		cmd.Stderr = &stderr
-		err = cmd.Run()
+		err = cmd.Start()
+		unwrap("failed to start program", err)
+		start := time.Now()
+		err = cmd.Wait()
+		tests[i].Time = time.Since(start).Seconds()
+		tests[i].Memory, _ = memory.PeakMemory(cmd)
 		tests[i].Output = stdout.String()
 		tests[i].Error = stderr.String()
 		if err != nil {

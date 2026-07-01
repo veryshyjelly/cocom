@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"image/color"
+	"runtime"
 	"strings"
 
 	"charm.land/bubbles/v2/help"
@@ -19,6 +20,7 @@ var (
 
 	headerStyle = lipgloss.NewStyle().
 			Foreground(Theme.Foreground).
+			PaddingBottom(1).
 			AlignHorizontal(lipgloss.Center)
 
 	labelStyle = lipgloss.NewStyle().Faint(true)
@@ -47,11 +49,14 @@ func (m Model) renderWaitMessage() string {
 	return lipgloss.NewCompositor(content, helpLayer).Render()
 }
 
+// renderInfo renders the complete information view by composing its header, middle, and body sections.
 func (m Model) renderInfo() string {
 	compositer := lipgloss.NewCompositor(m.renderHeader(), m.renderMiddle(), m.renderBody())
 	return compositer.Render()
 }
 
+// renderHeader renders the Model's title as a header, styled and sized according to the Model's width.
+// It returns a new lipgloss.Layer containing the rendered header content.
 func (m Model) renderHeader() *lipgloss.Layer {
 	content := headerStyle.Width(m.width).Render(m.Title)
 	//message := labelStyle.Render("? toggle help")
@@ -59,6 +64,8 @@ func (m Model) renderHeader() *lipgloss.Layer {
 	return lipgloss.NewLayer(content)
 }
 
+// renderMiddle generates and returns a lipgloss.Layer displaying the current test status,
+// metrics, and test case tabs as dots.
 func (m Model) renderMiddle() *lipgloss.Layer {
 	style := lipgloss.NewStyle()
 	status := string(m.status)
@@ -72,7 +79,17 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 	default:
 		status = style.Foreground(Theme.Error).Render(status)
 	}
-	statusLayer := lipgloss.NewLayer("Status: " + status).X(1)
+	var content string
+	if m.status != NotAvailable && m.status != Running {
+		if runtime.GOOS == "windows" {
+			content = fmt.Sprintf("Status: %s %.2fs", status, m.Tests[m.index].Time)
+		} else {
+			content = fmt.Sprintf("Status: %s %.2fs %.2fMiB", status, m.Tests[m.index].Time, float64(m.Tests[m.index].Memory)/1024)
+		}
+	} else {
+		content = fmt.Sprintf("Status: %s", status)
+	}
+	statusLayer := lipgloss.NewLayer(content).X(1)
 
 	dots := "  "
 	for i := 0; i < len(m.Tests); i++ {
@@ -94,11 +111,16 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 	}
 	dotsLayers := lipgloss.NewLayer(dots).X(m.width - lipgloss.Width(dots))
 
-	return lipgloss.NewLayer("", dotsLayers, statusLayer).Y(1)
+	return lipgloss.NewLayer("", dotsLayers, statusLayer).Y(2)
 }
 
+// renderBody renders the main content area of the application.
+// It creates two side-by-side viewports with dynamic labels based on the model's mode.
+// The left viewport displays content from the model's leftViewPort.
+// The right viewport displays content from the model's rightViewPort.
+// It returns a lipgloss.Layer combining these two viewports, positioned below the header.
 func (m Model) renderBody() *lipgloss.Layer {
-	h, w := m.height-4, m.width/2
+	h, w := m.height-5, m.width/2
 	style := textAreaStyle.Height(h).Width(w)
 
 	// select the appropriate labels
@@ -130,7 +152,7 @@ func (m Model) renderBody() *lipgloss.Layer {
 	).
 		X((m.width + 1) / 2)
 
-	return lipgloss.NewLayer("", leftLayer, rightLayer).Y(2)
+	return lipgloss.NewLayer("", leftLayer, rightLayer).Y(3)
 }
 
 func wrapContent(content string, width int) string {

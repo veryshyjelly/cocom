@@ -53,7 +53,7 @@ func (m Model) getSolution() string {
 		Execute(&solution, map[string]interface{}{
 			"Author":   m.Author,
 			"Url":      m.Url,
-			"Time":     time.Now(),
+			"Time":     time.Now().Format("2006/01/02 15:04"),
 			"LibFiles": libCode,
 			"Header":   headers,
 			"Code":     extractCodeBlock(string(code)),

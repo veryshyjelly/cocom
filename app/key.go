@@ -51,13 +51,14 @@ var DefaultKeyMap = KeyMap{
 	AnswerOutput: key.NewBinding(key.WithKeys("5", "c"),
 		key.WithHelp("5/c", "answer & output")),
 	NextCase: key.NewBinding(key.WithKeys("tab", "right"),
-		key.WithHelp("→/⇥", "next case")),
+		key.WithHelp("▶/⇥", "next case")),
 	PreviousCase: key.NewBinding(key.WithKeys("shift+tab", "left"),
-		key.WithHelp("←/⇧⇥", "previous case")),
+		key.WithHelp("◀/⇧⇥", "previous case")),
 	Help: key.NewBinding(key.WithKeys("?"),
 		key.WithHelp("?", "help")),
 }
 
+// renderHelp renders the help view for the model using the default key map.
 func (m Model) renderHelp() string {
 	h := help.New()
 	h.ShowAll = true
