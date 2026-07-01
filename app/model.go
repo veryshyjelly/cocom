@@ -99,6 +99,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.updatePanes()
 	case Info:
+		m.status = "NA"
 		m.setProblem(msg)
 		if m.Config.CreateFile {
 			m.createFile()

@@ -55,7 +55,7 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 	if status == "NA" {
 		status = style.Faint(true).Render(status)
 	} else if status == "WAP" {
-		status = style.Faint(true).Foreground(Theme.Foreground).Render(status)
+		status = style.Faint(true).Foreground(Theme.Warning).Render(status)
 	} else if status == "AC" {
 		status = style.Foreground(Theme.Success).Render(status)
 	} else {
