@@ -1,6 +1,8 @@
 package app
 
-import tea "charm.land/bubbletea/v2"
+import (
+	tea "charm.land/bubbletea/v2"
+)
 
 type Problem struct {
 	Title       string
@@ -18,10 +20,11 @@ type Testcase struct {
 	Time   float64
 }
 
-func (m Model) Compile() error {
+func (m Model) compile() error {
+
 	return nil
 }
 
-func (m Model) Run() tea.Msg {
+func (m Model) run() tea.Msg {
 	return nil
 }

@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"image/color"
+	"strings"
 
 	"charm.land/lipgloss/v2"
 )
@@ -52,13 +53,13 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 	style := lipgloss.NewStyle()
 	status := m.status
 	if status == "NA" {
-		status = "Status: " + style.Faint(true).Render(status)
+		status = style.Faint(true).Render(status)
 	} else if status == "AC" {
-		status = "Status: " + style.Foreground(Theme.Success).Render(status)
+		status = style.Foreground(Theme.Success).Render(status)
 	} else {
-		status = "Status: " + style.Foreground(Theme.Error).Render(status)
+		status = style.Foreground(Theme.Error).Render(status)
 	}
-	statusLayer := lipgloss.NewLayer(status).X(1)
+	statusLayer := lipgloss.NewLayer("Status: " + status).X(1)
 
 	dots := "  "
 	for i := 0; i < len(m.Tests); i++ {
@@ -78,7 +79,7 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 		}
 		dots += lipgloss.NewStyle().Foreground(clr).Render(dot)
 	}
-	dotsLayers := lipgloss.NewLayer(dots).X(m.width - lipgloss.Width(dots) - 2)
+	dotsLayers := lipgloss.NewLayer(dots).X(m.width - lipgloss.Width(dots))
 
 	return lipgloss.NewLayer("", dotsLayers, statusLayer).Y(1)
 }
@@ -116,4 +117,22 @@ func (m Model) renderBody() *lipgloss.Layer {
 		X((m.width + 1) / 2)
 
 	return lipgloss.NewLayer("", leftLayer, rightLayer).Y(2)
+}
+
+func wrapContent(content string, width int) string {
+	oddStyle := lipgloss.NewStyle()
+	evenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E6F0FF"))
+
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		if i%2 == 0 {
+			lines[i] = oddStyle.Render(line)
+		} else {
+			lines[i] = evenStyle.Render(line)
+		}
+	}
+
+	return lipgloss.NewStyle().
+		Width(width).
+		Render(strings.Join(lines, "\n"))
 }

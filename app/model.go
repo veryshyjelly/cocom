@@ -58,9 +58,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Functionality
 		*/
 		case "r":
-			return m, m.Run
+			return m, m.run
 		case "f":
-			return m, m.CreateFile
+			return m, m.createFile
 		/*
 			Handle Navigation
 		*/
@@ -97,6 +97,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.leftViewPort.YPosition = 4
 			m.rightViewPort = viewport.New()
 			m.rightViewPort.YPosition = 4
+			m.ready = true
 		}
 		m.width = msg.Width - 2
 		m.height = msg.Height - 2
@@ -145,19 +146,23 @@ func (m *Model) updatePanes() {
 		return
 	}
 
+	width := m.leftPane.W
+
 	testCase := m.Tests[m.index]
+	input, output, answer := wrapContent(testCase.Input, width),
+		wrapContent(testCase.Output, width), wrapContent(testCase.Answer, width)
 	if m.mode == InputOutput {
-		m.leftViewPort.SetContent(testCase.Input)
-		m.rightViewPort.SetContent(testCase.Output)
+		m.leftViewPort.SetContent(input)
+		m.rightViewPort.SetContent(output)
 	} else if m.mode == InputAnswer {
-		m.leftViewPort.SetContent(testCase.Input)
-		m.rightViewPort.SetContent(testCase.Answer)
+		m.leftViewPort.SetContent(input)
+		m.rightViewPort.SetContent(answer)
 	} else if m.mode == AnswerOutput {
-		m.leftViewPort.SetContent(testCase.Answer)
-		m.rightViewPort.SetContent(testCase.Output)
+		m.leftViewPort.SetContent(answer)
+		m.rightViewPort.SetContent(output)
 	} else if m.mode == InputDiff {
-		m.leftViewPort.SetContent(testCase.Input)
-		m.rightViewPort.SetContent(testCase.Answer)
+		m.leftViewPort.SetContent(input)
+		m.rightViewPort.SetContent(answer)
 	}
 }
 
@@ -166,19 +171,23 @@ func (m *Model) updatePanes() {
 func (m *Model) setLayout() {
 	m.leftPane = Rect{
 		X: 0,
-		Y: 3,
-		W: m.width / 2,
+		Y: 4,
+		// 2 for padding and 2 for border
+		W: m.width/2 - 4,
 		H: m.height - 4,
 	}
-	m.leftViewPort.SetWidth(m.leftPane.W)
+	// 1 for label
 	m.leftViewPort.SetHeight(m.leftPane.H - 1)
+	m.leftViewPort.SetWidth(m.leftPane.W)
 
 	m.rightPane = Rect{
 		X: (m.width + 1) / 2,
-		Y: 3,
-		W: m.width / 2,
+		Y: 4,
+		// 2 for padding and 2 for border
+		W: m.width/2 - 4,
 		H: m.height - 4,
 	}
-	m.rightViewPort.SetWidth(m.rightPane.W)
+	// 1 for label
 	m.rightViewPort.SetHeight(m.rightPane.H - 1)
+	m.rightViewPort.SetWidth(m.rightPane.W)
 }

@@ -1,17 +1,13 @@
 package app
 
 import (
-	"bytes"
-	"net/url"
 	"os"
+	"slices"
 	"strings"
+	"text/template"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
 	"github.com/ettle/strcase"
-
-	"regexp"
-	"text/template"
 )
 
 var funcMap = template.FuncMap{
@@ -24,51 +20,55 @@ var funcMap = template.FuncMap{
 	"stripPrefix":  stripPrefix,
 }
 
-func (m Model) CreateFile() tea.Msg {
-	u, err := url.Parse(m.Url)
-	if err != nil {
-		return err
-	}
-
-	host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
-
-	index := -1
-	for i, rule := range m.Rules {
-		if rule.Site == host {
-			index = i
-			break
-		}
-	}
-
-	if index == -1 {
-		log.Error("Could not find a rule matching site", "site", m.Url)
-		return nil
-	}
-
-	nameTemplate := template.Must(template.New("filename").
-		Funcs(funcMap).
-		Parse(m.Rules[index].Regex))
-
-	regex, err := regexp.Compile(m.Regex)
-	unwrap("invalid regex for url parsing", err)
-	captures := regex.FindStringSubmatch(m.Url)
-
-	var buffer bytes.Buffer
-	err = nameTemplate.Execute(&buffer, map[string]interface{}{
-		"Captures": captures,
-		"Title":    m.Title,
-	})
-	unwrap("template error", err)
-
-	return nil
-}
-
 func stripPrefix(title, delim string) string {
 	parts := strings.SplitN(title, delim, 2)
 	if len(parts) == 2 {
 		return strings.TrimSpace(parts[1])
 	}
 	return title
+}
+
+func extractBlock(source, tag string, defaultValue string) string {
+	if !strings.Contains(source, "@"+tag) {
+		return defaultValue
+	}
+
+	lines := strings.Split(source, "\n")
+	var start int
+	if start = slices.IndexFunc(lines,
+		func(line string) bool {
+			return strings.Contains(line, "@"+tag) &&
+				strings.Contains(line, "begin")
+		}); start == -1 {
+		return source
+	}
+
+	end := slices.IndexFunc(lines[start+1:],
+		func(line string) bool {
+			return strings.Contains(line, "@"+tag) &&
+				strings.Contains(line, "end")
+		})
+
+	var block []string
+	if end == -1 {
+		block = lines[start+1:]
+	} else {
+		block = lines[start+1 : start+1+end]
+	}
+
+	if len(block) == 0 {
+		return source
+	}
+
+	return strings.TrimSpace(strings.Join(block, "\n"))
+}
+
+func extractHeaderBlock(source string) string {
+	return extractBlock(source, "head", "")
+}
+
+func extractCodeBlock(source string) string {
+	return extractBlock(source, "code", source)
 }
 
 func unwrap(message string, err error) {

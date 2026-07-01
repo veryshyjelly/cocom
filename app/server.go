@@ -39,6 +39,8 @@ func HandleData(p *tea.Program) func(http.ResponseWriter, *http.Request) {
 }
 
 func (m *Model) setProblem(info Info) {
+	m.index = min(m.index, len(info.Tests)-1)
+
 	// Fill problem and test case in model
 	m.Problem = Problem{
 		Title:       info.Name,
