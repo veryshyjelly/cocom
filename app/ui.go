@@ -62,6 +62,10 @@ func (m Model) renderInfo() string {
 // styled and constrained to the terminal width.
 func (m Model) renderHeader() *lipgloss.Layer {
 	content := headerStyle.Width(m.width).Render(m.Title)
+	changedLayer := lipgloss.NewLayer("˙").X(m.width - 2)
+	if m.fileChanged {
+		return lipgloss.NewLayer(content, changedLayer)
+	}
 	return lipgloss.NewLayer(content)
 }
 

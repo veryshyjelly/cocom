@@ -13,17 +13,18 @@ type Model struct {
 	Problem
 	Tests []Testcase
 
-	status Status
-	index  int
-	height int
-	width  int
+	status      Status
+	fileChanged bool
+	fileChan    chan string
 
+	index         int
+	height        int
+	width         int
+	ready         bool
+	leftPane      Rect
+	rightPane     Rect
 	leftViewPort  viewport.Model
 	rightViewPort viewport.Model
-	ready         bool
-
-	leftPane  Rect
-	rightPane Rect
 
 	mode Mode
 }
@@ -41,12 +42,13 @@ const (
 // NewModel initializes and returns a new Bubble Tea Model with the provided
 // project root directory and application configuration. It sets the initial
 // execution status to NotAvailable.
-func NewModel(root string, config Config) Model {
+func NewModel(root string, config Config, fileChan chan string) Model {
 	log.Info("Initializing new model", "root", root)
 	return Model{
-		Root:   root,
-		Config: config,
-		status: NoData,
+		Root:     root,
+		Config:   config,
+		status:   NoData,
+		fileChan: fileChan,
 	}
 }
 
@@ -73,9 +75,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			log.Info("Run command triggered")
 			m.status = Running
 			return m, m.run
-		case key.Matches(msg, DefaultKeyMap.CreateFile):
+		case key.Matches(msg, DefaultKeyMap.CreateFile) && m.status != NoData:
 			log.Info("Create file command triggered")
 			return m, m.createFile
+		case key.Matches(msg, DefaultKeyMap.CopyFile):
+			log.Info("Copy file command triggered")
+			m.fileChanged = false
+			return m, m.copyFile
 		case key.Matches(msg, DefaultKeyMap.InputAnswer):
 			m.mode = InputAnswer
 		case key.Matches(msg, DefaultKeyMap.InputOutput):
@@ -94,14 +100,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = ShowHelp * (1 - m.mode/ShowHelp)
 		}
 		m.updatePanes()
-	case Info:
-		log.Info("Received new problem info", "title", msg.Name)
-		m.setProblem(msg)
-		if m.Config.CreateFile {
-			log.Debug("Auto-creating file based on config")
-			m.createFile()
+	case tea.MouseMsg:
+		if m.rightPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
+			m.rightViewPort, cmd = m.rightViewPort.Update(msg)
+		} else if m.leftPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
+			m.leftViewPort, cmd = m.leftViewPort.Update(msg)
 		}
-		m.updatePanes()
 	case tea.WindowSizeMsg:
 		log.Debug("Window resized", "width", msg.Width, "height", msg.Height)
 		if !m.ready {
@@ -115,18 +119,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height - 2
 		m.setLayout()
 		m.updatePanes()
-	case tea.MouseMsg:
-		if m.rightPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
-			m.rightViewPort, cmd = m.rightViewPort.Update(msg)
-		} else if m.leftPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
-			m.leftViewPort, cmd = m.leftViewPort.Update(msg)
+	case Info:
+		log.Info("Received new problem info", "title", msg.Name)
+		m.setProblem(msg)
+		if m.Config.CreateFile {
+			log.Debug("Auto-creating file based on config")
+			m.createFile()
 		}
+		m.fileChan <- m.getFileName()
+		m.updatePanes()
 	case []Testcase:
 		log.Info("Received test case results", "count", len(msg))
 		m.Tests = msg
 		m.status = getFinalStatus(m.Tests)
 		m.updatePanes()
 		log.Info("Updated overall status", "status", m.status)
+	case FileChanged:
+		log.Info("File change detected", "filename", msg)
+		m.fileChanged = true
+		if m.Config.RunOnSave && len(m.Tests) > 0 {
+			m.status = Running
+			return m, m.run
+		}
 	}
 	return m, cmd
 }

@@ -10,6 +10,7 @@ import (
 	"charm.land/huh/v2"
 	"charm.land/log/v2"
 	"github.com/alecthomas/kong"
+	"github.com/fsnotify/fsnotify"
 	"github.com/veryshyjelly/cocom/app"
 	"github.com/veryshyjelly/cocom/templates"
 )
@@ -42,7 +43,6 @@ func main() {
 		os.Exit(1)
 	}
 	defer logFile.Close()
-
 	log.SetOutput(logFile)
 
 	if cli.Debug {
@@ -65,24 +65,34 @@ func main() {
 				huh.NewOption[string]("Ocaml", "ocaml"),
 			).Value(&language).
 			Run()
-		Unwrap("can't get language of choice", err)
+		unwrap("can't get language of choice", err)
 
 		data, err := templates.FS.ReadFile(language + ".yml")
-		Unwrap("failed to read config template", err)
+		unwrap("failed to read config template", err)
 
 		err = os.WriteFile(cli.Config, data, 0644)
-		Unwrap("failed to write config template", err)
+		unwrap("failed to write config template", err)
 
 		log.Info("config template copied, please edit it before running the program again", "path", cli.Config)
 		os.Exit(0)
 	} else if err != nil {
-		Unwrap("failed to decode config file", err)
+		unwrap("failed to decode config file", err)
 	}
-
 	log.Debug("successfully loaded config", "config", config)
 
-	model := app.NewModel(cli.Root, config)
+	log.Debug("creating watcher for the directory")
+	w, err := fsnotify.NewWatcher()
+	unwrap("creating a new watcher", err)
+	defer w.Close()
+	// watch the root itself for all file changes
+	log.Info("watching directory", "path", cli.Root)
+	err = w.Add(cli.Root)
+	unwrap("failed to add root to watcher", err)
+	// initiate model and tea program, then start the fileloop
+	fileChan := make(chan string, 10)
+	model := app.NewModel(cli.Root, config, fileChan)
 	p := tea.NewProgram(model)
+	go app.FileLoop(w, p, fileChan)
 
 	http.HandleFunc("/", app.HandleData(p))
 	go func() {

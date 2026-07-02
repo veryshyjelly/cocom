@@ -14,41 +14,21 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
+	"github.com/atotto/clipboard"
 	"github.com/google/shlex"
 )
 
 // createFile generates a boilerplate source code file based on the current problem's
 // URL and the configured filename rules and templates.
 //
-// If configured, it also asynchronously launches an external editor pointing to the
-// newly created file. This function is designed to be executed as a Bubble Tea command
-// and always returns nil.
+// This function is designed to be executed as a Bubble Tea command and always returns nil.
 func (m Model) createFile() tea.Msg {
 	filename := filepath.Join(m.Root, m.getFileName())
 	log.Info("Attempting to create file", "filename", filename)
 
 	defer func() {
 		if m.Config.Editor != "" {
-			var editor bytes.Buffer
-			err := template.Must(template.New("editor").
-				Funcs(funcMap).
-				Parse(m.Config.Editor)).Execute(&editor, map[string]interface{}{
-				"Filename": filename,
-			})
-			unwrap("couldn't render editor template", err)
-
-			args, err := shlex.Split(editor.String())
-			unwrap("couldn't parse editor template", err)
-
-			log.Debug("Executing editor command", "args", args)
-			cmd := exec.Command(args[0], args[1:]...)
-			cmd.Dir = m.Root
-			err = cmd.Run()
-			if err != nil {
-				log.Error("Failed to open editor", "err", err, "args", args)
-			} else {
-				log.Info("Editor closed")
-			}
+			m.openEditor()
 		}
 	}()
 
@@ -86,6 +66,44 @@ func (m Model) createFile() tea.Msg {
 	}
 
 	log.Info("Successfully created file", "filename", filename)
+	return nil
+}
+
+// openEditor constructs and executes an external editor command to open the current problem's file.
+// It renders the editor command from a template defined in the model's configuration.
+// The template receives the full path to the file as "Filename".
+// The command is then split into arguments and executed in the `m.Root` directory.
+// Errors during template rendering, command parsing, or execution are logged.
+func (m Model) openEditor() {
+	filename := filepath.Join(m.Root, m.getFileName())
+	var editor bytes.Buffer
+	err := template.Must(template.New("editor").
+		Funcs(funcMap).
+		Parse(m.Config.Editor)).Execute(&editor, map[string]interface{}{
+		"Filename": filename,
+	})
+	unwrap("couldn't render editor template", err)
+
+	args, err := shlex.Split(editor.String())
+	unwrap("couldn't parse editor template", err)
+
+	log.Debug("Executing editor command", "args", args)
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Dir = m.Root
+	err = cmd.Run()
+	if err != nil {
+		log.Error("Failed to open editor", "err", err, "args", args)
+	} else {
+		log.Info("Editor closed")
+	}
+}
+
+// copyFile copies the final solution to clipboard
+func (m Model) copyFile() tea.Msg {
+	err := clipboard.WriteAll(m.getSolution())
+	if err != nil {
+		log.Fatal(err)
+	}
 	return nil
 }
 
