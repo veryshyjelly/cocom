@@ -88,16 +88,18 @@ run_on_save: on
 
 ### Shortcuts
 ```text
-r       Run
-n       New test case
-f       Create file
-e       Show errors
-tab     Nagivate cases
-c       Copy Solution
-q       Quit
+r / Ctrl+'      Run
+f               Create file
+q / Esc         Quit
 
-i       Input  | Answer
-Space   Input  | Output
-o       Answer | Output
-d       Input  | Diff
+1 / j           Input  | Answer
+2 / k           Input  | Output
+3 / l           Input  | Error
+4 / ;           Answer | Output
+
+→ / Tab         Next case
+← / Shift+Tab   Previous case
+
+?               Help
 ```
+
