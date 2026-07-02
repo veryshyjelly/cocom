@@ -6,7 +6,11 @@
 - Open file in editor
 - Library injection
 - Testing and profiling
-- Sandboxed running 
+- Sandboxed running
+
+## Example usage with Vscode
+<img width="1280" height="876" alt="cocom_tutorial" src="https://github.com/user-attachments/assets/9137a89e-df72-4f01-831b-3c37df89ad84" />
+
 
 ## Usage
 ```bash
