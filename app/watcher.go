@@ -2,6 +2,7 @@ package app
 
 import (
 	"path/filepath"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
@@ -12,27 +13,34 @@ type FileChanged struct {
 	filename string
 }
 
-func FileLoop(w *fsnotify.Watcher, p *tea.Program, files chan string) {
-	filename := ""
+func FileLoop(w *fsnotify.Watcher, p *tea.Program, root string, files chan string) {
+	var (
+		filename string
+		timer    *time.Timer
+	)
+
 	for {
 		select {
-		case err, ok := <-w.Errors:
-			if !ok { // Channel was closed (i.e. Watcher.Close() was called).
-				return
-			}
-			log.Errorf("ERROR: %s", err)
 		case file := <-files:
-			// new file has come
-			log.Debug("New file registered", "filename", file)
-			filename = file
-		// Read from Events.
+			filename = filepath.Base(file)
+			err := w.Add(filepath.Dir(filepath.Join(root, file)))
+			unwrap("couldn't watch parent directory", err)
 		case e := <-w.Events:
-			log.Debug("File changed", "filename", e.Name)
-			// Ignore files we're not interested in.
-			if filename == "" || filepath.Clean(filename) != filepath.Clean(e.Name) {
+			if e.Op&fsnotify.Write == 0 {
 				continue
 			}
-			p.Send(FileChanged{filename})
+			if filename == "" || filename != filepath.Base(e.Name) {
+				continue
+			}
+			if timer != nil {
+				timer.Stop()
+			}
+			timer = time.AfterFunc(200*time.Millisecond, func() {
+				log.Debug("File changed detected", "filename", e.Name)
+				p.Send(FileChanged{filename})
+			})
+		case err := <-w.Errors:
+			log.Error(err)
 		}
 	}
 }

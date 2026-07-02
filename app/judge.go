@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -112,58 +113,74 @@ func (m Model) run() tea.Msg {
 	}
 	log.Debug("Parsed run arguments", "args", args)
 
+	wg := &sync.WaitGroup{}
+	testsChan := make(chan Testcase, len(tests))
+
 	for i := range tests {
-		log.Debug("Preparing test case", "index", i)
-		// prepare the command for execution
-		var stdout, stderr bytes.Buffer
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Dir = dir
-		cmd.Stdin = strings.NewReader(tests[i].Input)
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
+		wg.Add(1)
+		go func(test Testcase, ch chan Testcase) {
+			defer wg.Done()
 
-		timeout := time.Duration(m.TimeLimit) * time.Millisecond
-		log.Debug("Executing test case", "index", i, "timeout", timeout)
-		err = cmd.Start()
-		unwrap("failed to start program", err)
+			log.Debug("Preparing test case", "index", i)
+			// prepare the command for execution
+			var stdout, stderr bytes.Buffer
+			cmd := exec.Command(args[0], args[1:]...)
+			cmd.Dir = dir
+			cmd.Stdin = strings.NewReader(test.Input)
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
 
-		var timedOut atomic.Bool
-		timer := time.AfterFunc(timeout, func() {
-			timedOut.Store(true)
-			_ = cmd.Process.Kill()
-		})
+			timeout := time.Duration(m.TimeLimit) * time.Millisecond
+			log.Debug("Executing test case", "index", i, "timeout", timeout)
+			err = cmd.Start()
+			unwrap("failed to start program", err)
 
-		start := time.Now()
-		err = cmd.Wait()
-		duration := time.Since(start)
+			var timedOut atomic.Bool
+			timer := time.AfterFunc(timeout, func() {
+				timedOut.Store(true)
+				_ = cmd.Process.Kill()
+			})
+			defer timer.Stop()
 
-		tests[i].Time = duration.Seconds()
-		tests[i].Memory, _ = memory.PeakMemory(cmd)
-		tests[i].Output = stdout.String()
-		tests[i].Error = stderr.String()
+			start := time.Now()
+			err = cmd.Wait()
+			duration := time.Since(start)
 
-		// determine status based on error and output
-		switch {
-		case timedOut.Load():
-			tests[i].Status = TimeLimitError
-			log.Warn("Test case TLE", "index", i, "time", tests[i].Time)
-		case err != nil:
-			tests[i].Status = RuntimeError
-			log.Warn("Test case RE", "index", i, "err", err, "stderr", tests[i].Error)
-		case strings.TrimSpace(tests[i].Output) == strings.TrimSpace(tests[i].Answer):
-			tests[i].Status = Accepted
-			log.Info("Test case AC", "index", i, "time", tests[i].Time, "memory_kb", tests[i].Memory)
-		default:
-			tests[i].Status = WrongAnswer
-			log.Warn("Test case WA", "index", i, "time", tests[i].Time)
-		}
+			test.Time = duration.Seconds()
+			test.Memory, _ = memory.PeakMemory(cmd)
+			test.Output = stdout.String()
+			test.Error = stderr.String()
 
-		timer.Stop()
+			// determine status based on error and output
+			switch {
+			case timedOut.Load():
+				test.Status = TimeLimitError
+				log.Warn("Test case TLE", "index", i, "time", test.Time)
+			case err != nil:
+				test.Status = RuntimeError
+				log.Warn("Test case RE", "index", i, "err", err, "stderr", test.Error)
+			case strings.TrimSpace(test.Output) == strings.TrimSpace(test.Answer):
+				test.Status = Accepted
+				log.Info("Test case AC", "index", i, "time", test.Time, "memory_kb", test.Memory)
+			default:
+				test.Status = WrongAnswer
+				log.Warn("Test case WA", "index", i, "time", test.Time)
+			}
+
+			ch <- test
+		}(tests[i], testsChan)
+	}
+	wg.Wait()
+
+	result := make([]Testcase, 0, len(tests))
+	for range tests {
+		test := <-testsChan
+		result = append(result, test)
 	}
 
-	finalStatus := getFinalStatus(tests)
+	finalStatus := getFinalStatus(result)
 	log.Info("Finished test execution", "final_status", finalStatus)
-	return tests
+	return result
 }
 
 // getFinalStatus evaluates a slice of executed test cases and determines the overall

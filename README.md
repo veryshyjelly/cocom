@@ -89,6 +89,7 @@ run_on_save: on
 ### Shortcuts
 ```text
 r / Ctrl+'      Run
+c               Copy file
 f               Create file
 q / Esc         Quit
 

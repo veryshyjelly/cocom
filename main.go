@@ -84,15 +84,11 @@ func main() {
 	w, err := fsnotify.NewWatcher()
 	unwrap("creating a new watcher", err)
 	defer w.Close()
-	// watch the root itself for all file changes
-	log.Info("watching directory", "path", cli.Root)
-	err = w.Add(cli.Root)
-	unwrap("failed to add root to watcher", err)
 	// initiate model and tea program, then start the fileloop
 	fileChan := make(chan string, 10)
 	model := app.NewModel(cli.Root, config, fileChan)
 	p := tea.NewProgram(model)
-	go app.FileLoop(w, p, fileChan)
+	go app.FileLoop(w, p, cli.Root, fileChan)
 
 	http.HandleFunc("/", app.HandleData(p))
 	go func() {

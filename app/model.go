@@ -135,7 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updatePanes()
 		log.Info("Updated overall status", "status", m.status)
 	case FileChanged:
-		log.Info("File change detected", "filename", msg)
+		log.Info("Got filechange msg", "filename", msg)
 		m.fileChanged = true
 		if m.Config.RunOnSave && len(m.Tests) > 0 {
 			m.status = Running
