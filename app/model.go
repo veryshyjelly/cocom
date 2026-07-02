@@ -1,11 +1,10 @@
 package app
 
 import (
-	"slices"
-
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/log/v2"
 )
 
 type Model struct {
@@ -36,36 +35,46 @@ const (
 	InputOutput
 	InputError
 	AnswerOutput
-	InputDiff
 	ShowHelp
 )
 
+// NewModel initializes and returns a new Bubble Tea Model with the provided
+// project root directory and application configuration. It sets the initial
+// execution status to NotAvailable.
 func NewModel(root string, config Config) Model {
+	log.Info("Initializing new model", "root", root)
 	return Model{
 		Root:   root,
 		Config: config,
-		status: NotAvailable,
+		status: NoData,
 	}
 }
 
+// Init is the Bubble Tea initialization command. It returns nil as no initial
+// asynchronous background tasks are required upon startup.
 func (m Model) Init() tea.Cmd {
+	log.Debug("Model Init called")
 	return nil
 }
 
-// Update handles messages and updates the model, returning the updated model and a command.
-// It processes key presses, window size changes, mouse events, and test case results.
-// The method updates the model's state, status, viewports, and active test case index.
+// Update is the core Bubble Tea event loop. It processes keyboard inputs,
+// window resizing, mouse events, and incoming problem/testcase messages to
+// update the application state and trigger background commands.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		log.Debug("Key pressed", "key", msg.String())
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Quit):
+			log.Info("Quit command received")
 			return m, tea.Quit
 		case key.Matches(msg, DefaultKeyMap.Run) && len(m.Tests) > 0:
+			log.Info("Run command triggered")
 			m.status = Running
 			return m, m.run
 		case key.Matches(msg, DefaultKeyMap.CreateFile):
+			log.Info("Create file command triggered")
 			return m, m.createFile
 		case key.Matches(msg, DefaultKeyMap.InputAnswer):
 			m.mode = InputAnswer
@@ -73,26 +82,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = InputOutput
 		case key.Matches(msg, DefaultKeyMap.InputError):
 			m.mode = InputError
-		case key.Matches(msg, DefaultKeyMap.InputDiff):
-			m.mode = InputDiff
 		case key.Matches(msg, DefaultKeyMap.AnswerOutput):
 			m.mode = AnswerOutput
 		case key.Matches(msg, DefaultKeyMap.NextCase) && len(m.Tests) > 0:
 			m.index = (m.index + 1) % len(m.Tests)
+			log.Debug("Next test case", "index", m.index)
 		case key.Matches(msg, DefaultKeyMap.PreviousCase) && len(m.Tests) > 0:
 			m.index = (m.index - 1 + len(m.Tests)) % len(m.Tests)
+			log.Debug("Previous test case", "index", m.index)
 		case key.Matches(msg, DefaultKeyMap.Help):
-			m.mode = ShowHelp - m.mode/ShowHelp
+			m.mode = ShowHelp * (1 - m.mode/ShowHelp)
 		}
 		m.updatePanes()
 	case Info:
-		m.status = NotAvailable
+		log.Info("Received new problem info", "title", msg.Name)
 		m.setProblem(msg)
 		if m.Config.CreateFile {
+			log.Debug("Auto-creating file based on config")
 			m.createFile()
 		}
 		m.updatePanes()
 	case tea.WindowSizeMsg:
+		log.Debug("Window resized", "width", msg.Width, "height", msg.Height)
 		if !m.ready {
 			m.leftViewPort = viewport.New()
 			m.leftViewPort.YPosition = 4
@@ -111,40 +122,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.leftViewPort, cmd = m.leftViewPort.Update(msg)
 		}
 	case []Testcase:
+		log.Info("Received test case results", "count", len(msg))
 		m.Tests = msg
-		switch {
-		case slices.ContainsFunc(m.Tests,
-			func(t Testcase) bool { return t.Status == CompilationError }):
-			m.status = CompilationError
-		case slices.ContainsFunc(m.Tests,
-			func(t Testcase) bool { return t.Status == RuntimeError }):
-			m.status = RuntimeError
-		case slices.ContainsFunc(m.Tests,
-			func(t Testcase) bool { return t.Status == WrongAnswer }):
-			m.status = WrongAnswer
-		default:
-			m.status = Accepted
-		}
+		m.status = getFinalStatus(m.Tests)
+		m.updatePanes()
+		log.Info("Updated overall status", "status", m.status)
 	}
-
 	return m, cmd
 }
 
-// View renders the current state of the Model into a tea.View for display.
-// It conditionally renders help, a wait message, or information based on the model's state.
-// The rendered content is wrapped within a styled container.
-// The returned view is configured for cell motion mouse mode and uses the alternate screen buffer.
+// View renders the current state of the application into a Bubble Tea View.
+// It conditionally delegates rendering to the help screen, the idle waiting screen,
+// or the main problem interface based on the current mode and URL state.
 func (m Model) View() tea.View {
 	var s string
-
-	if m.mode == ShowHelp {
+	// conditionally render different views based on the mode
+	switch {
+	case m.mode == ShowHelp:
 		s = m.renderHelp()
-	} else if m.Url == "" {
+	case m.status == NoData:
 		s = m.renderWaitMessage()
-	} else {
+	default:
 		s = m.renderInfo()
 	}
 
+	// render the view inside a bordered box
 	s = containerStyle.
 		Height(m.height + 2).
 		Width(m.width + 2).
@@ -156,13 +158,9 @@ func (m Model) View() tea.View {
 	return v
 }
 
-// updatePanes updates the content of the left and right viewports based on the current display mode.
-// It retrieves the test case specified by the model's current index.
-// The content displayed in each viewport depends on the value of `m.mode`.
-// For InputOutput mode, it shows the test case's Input and Output.
-// For InputAnswer mode, it shows the test case's Input and Answer.
-// For AnswerOutput mode, it shows the test case's Answer and Output.
-// For InputDiff mode, it displays the test case's Input and Answer.
+// updatePanes synchronizes the content of the left and right UI viewports with
+// the currently selected test case and the active display mode (e.g., Input/Output,
+// Input/Answer, Input/Error).
 func (m *Model) updatePanes() {
 	if len(m.Tests) == 0 {
 		return
@@ -174,6 +172,7 @@ func (m *Model) updatePanes() {
 	input, output, answer := wrapContent(testCase.Input, width),
 		wrapContent(testCase.Output, width), wrapContent(testCase.Answer, width)
 	erro := wrapContent(testCase.Error, width)
+
 	if m.mode == InputOutput {
 		m.leftViewPort.SetContent(input)
 		m.rightViewPort.SetContent(output)
@@ -186,14 +185,11 @@ func (m *Model) updatePanes() {
 	} else if m.mode == AnswerOutput {
 		m.leftViewPort.SetContent(answer)
 		m.rightViewPort.SetContent(output)
-	} else if m.mode == InputDiff {
-		m.leftViewPort.SetContent(input)
-		m.rightViewPort.SetContent(answer)
 	}
 }
 
-// setLayout calculates and sets the dimensions and positions of the left and right display panes.
-// // It updates the size of the corresponding viewports based on the model's current width and height.
+// setLayout recalculates and applies the dimensions, padding, and coordinates
+// for the split-pane UI layout based on the current terminal window size.
 func (m *Model) setLayout() {
 	m.leftPane = Rect{
 		X: 0,

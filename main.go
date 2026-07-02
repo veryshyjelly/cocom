@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
@@ -33,15 +34,28 @@ func main() {
 		return
 	}
 
+	// Initialize comprehensive logging
+	logPath := filepath.Join(os.TempDir(), "cocom.log")
+	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Printf("failed to open log file: %v\n", err)
+		os.Exit(1)
+	}
+	defer logFile.Close()
+
+	log.SetOutput(logFile)
+
 	if cli.Debug {
 		log.SetLevel(log.DebugLevel)
+		log.Debug("Debug logging enabled", "path", logPath)
 	} else {
 		log.SetLevel(log.InfoLevel)
+		log.Info("Info logging enabled", "path", logPath)
 	}
 
 	config, err := app.ReadConfig(cli.Config)
 	if os.IsNotExist(err) {
-		log.Info("config file not found, choose a template")
+		log.Info("config file not found, prompting user for template")
 		var language string
 		err := huh.NewSelect[string]().
 			Title("Pick a language (doesn't matter just pick one).").
@@ -52,32 +66,33 @@ func main() {
 			).Value(&language).
 			Run()
 		Unwrap("can't get language of choice", err)
+
 		data, err := templates.FS.ReadFile(language + ".yml")
 		Unwrap("failed to read config template", err)
 
 		err = os.WriteFile(cli.Config, data, 0644)
 		Unwrap("failed to write config template", err)
 
-		log.Info("config template copied, please edit it before running the program again")
-
+		log.Info("config template copied, please edit it before running the program again", "path", cli.Config)
 		os.Exit(0)
 	} else if err != nil {
 		Unwrap("failed to decode config file", err)
 	}
 
-	log.Debug("got config", "config", config)
+	log.Debug("successfully loaded config", "config", config)
 
 	model := app.NewModel(cli.Root, config)
 	p := tea.NewProgram(model)
 
 	http.HandleFunc("/", app.HandleData(p))
 	go func() {
-		log.Fatal("http server crashed", "err",
-			http.ListenAndServe("127.0.0.1:27121", nil))
+		log.Info("Starting HTTP server", "addr", "127.0.0.1:27121")
+		err := http.ListenAndServe("127.0.0.1:27121", nil)
+		log.Fatal("http server crashed", "err", err)
 	}()
 
+	log.Info("Starting TUI")
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
+		log.Fatal("TUI crashed", "err", err)
 	}
 }

@@ -31,6 +31,9 @@ var (
 			BorderForeground(Theme.Border)
 )
 
+// renderWaitMessage renders the idle state UI, displaying a prompt instructing
+// the user to select a problem via the browser extension, alongside the compact
+// help menu at the bottom of the screen.
 func (m Model) renderWaitMessage() string {
 	s := "Select problem from competitive companion"
 	content := lipgloss.NewLayer(lipgloss.Place(
@@ -41,7 +44,6 @@ func (m Model) renderWaitMessage() string {
 		waitMessageStyle.Render(s),
 	))
 	h := help.New()
-	h.SetWidth(m.width)
 	helpLayer := lipgloss.NewLayer(
 		lipgloss.PlaceHorizontal(m.width, lipgloss.Center,
 			h.View(DefaultKeyMap)),
@@ -49,23 +51,23 @@ func (m Model) renderWaitMessage() string {
 	return lipgloss.NewCompositor(content, helpLayer).Render()
 }
 
-// renderInfo renders the complete information view by composing its header, middle, and body sections.
+// renderInfo composes and renders the main active UI, combining the problem header,
+// status metrics, and the split-pane test case viewports into a single layered view.
 func (m Model) renderInfo() string {
 	compositer := lipgloss.NewCompositor(m.renderHeader(), m.renderMiddle(), m.renderBody())
 	return compositer.Render()
 }
 
-// renderHeader renders the Model's title as a header, styled and sized according to the Model's width.
-// It returns a new lipgloss.Layer containing the rendered header content.
+// renderHeader renders the top header layer containing the current problem's title,
+// styled and constrained to the terminal width.
 func (m Model) renderHeader() *lipgloss.Layer {
 	content := headerStyle.Width(m.width).Render(m.Title)
-	//message := labelStyle.Render("? toggle help")
-	//helpLayer := lipgloss.NewLayer(message).X(m.width - lipgloss.Width(message) - 1)
 	return lipgloss.NewLayer(content)
 }
 
-// renderMiddle generates and returns a lipgloss.Layer displaying the current test status,
-// metrics, and test case tabs as dots.
+// renderMiddle renders the middle status bar layer, displaying the current execution
+// status (AC, WA, TLE, etc.), performance metrics (time/memory), and interactive
+// test case navigation dots.
 func (m Model) renderMiddle() *lipgloss.Layer {
 	style := lipgloss.NewStyle()
 	status := string(m.status)
@@ -80,7 +82,7 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 		status = style.Foreground(Theme.Error).Render(status)
 	}
 	var content string
-	if m.status != NotAvailable && m.status != Running {
+	if m.status == Accepted || m.status == WrongAnswer {
 		if runtime.GOOS == "windows" {
 			content = fmt.Sprintf("Status: %s %.2fs", status, m.Tests[m.index].Time)
 		} else {
@@ -100,11 +102,12 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 			dot = "○ "
 		}
 		var clr color.Color
-		if m.Tests[i].Status == "AC" {
+		switch m.Tests[i].Status {
+		case Accepted:
 			clr = lipgloss.Green
-		} else if m.Tests[i].Status == "" {
+		case NotAvailable:
 			clr = lipgloss.White
-		} else {
+		default:
 			clr = lipgloss.Red
 		}
 		dots += lipgloss.NewStyle().Foreground(clr).Render(dot)
@@ -114,11 +117,8 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 	return lipgloss.NewLayer("", dotsLayers, statusLayer).Y(2)
 }
 
-// renderBody renders the main content area of the application.
-// It creates two side-by-side viewports with dynamic labels based on the model's mode.
-// The left viewport displays content from the model's leftViewPort.
-// The right viewport displays content from the model's rightViewPort.
-// It returns a lipgloss.Layer combining these two viewports, positioned below the header.
+// renderBody renders the main body layer containing the side-by-side split viewports.
+// It dynamically labels the panes based on the current viewing mode (e.g., "Input" vs "Output").
 func (m Model) renderBody() *lipgloss.Layer {
 	h, w := m.height-5, m.width/2
 	style := textAreaStyle.Height(h).Width(w)
@@ -129,7 +129,6 @@ func (m Model) renderBody() *lipgloss.Layer {
 		{"Input", "Output"},
 		{"Input", "Error"},
 		{"Answer", "Output"},
-		{"Input", "Diff"},
 	}[m.mode]
 
 	// Create input layer
@@ -155,6 +154,9 @@ func (m Model) renderBody() *lipgloss.Layer {
 	return lipgloss.NewLayer("", leftLayer, rightLayer).Y(3)
 }
 
+// wrapContent formats a multi-line string for display in the UI viewports.
+// It applies alternating background/foreground styles to adjacent lines to create
+// a "zebra-stripe" effect for improved readability, and wraps the text to the specified width.
 func wrapContent(content string, width int) string {
 	oddStyle := lipgloss.NewStyle()
 	evenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E6F0FF"))

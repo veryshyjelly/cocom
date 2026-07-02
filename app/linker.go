@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,6 +10,7 @@ import (
 	"text/template"
 	"time"
 
+	"charm.land/log/v2"
 	"github.com/samber/lo"
 )
 
@@ -25,13 +25,18 @@ type node struct {
 	deps    []string
 }
 
-// getSolution processes the main code, linked libraries,
-// and headers to generate a final solution string.
+// getSolution orchestrates the final code generation process for submission.
+// It reads the main source file, resolves and topologically sorts library dependencies,
+// extracts and deduplicates header blocks (e.g., #includes), and merges everything
+// into a single, deployable source code string using a configured template modifier.
 func (m Model) getSolution() string {
+	log.Debug("Generating final solution string")
 	code, err := os.ReadFile(filepath.Join(m.Root, m.getFileName()))
 	unwrap("couldn't read file in getSolution", err)
+
 	// get the lib files in topo sorted order
 	libFiles := m.linkFiles()
+	log.Debug("Extracting code blocks from libraries", "count", len(libFiles))
 	libCode := lo.Map(libFiles, // extract out the code blocks
 		func(item Library, _ int) Library {
 			return Library{
@@ -39,15 +44,21 @@ func (m Model) getSolution() string {
 				Content: extractCodeBlock(item.Content),
 			}
 		})
+
 	// extract out headers from each lib file
+	log.Debug("Extracting header blocks from libraries")
 	libHeader := lo.Map(libFiles, func(item Library, _ int) string {
 		return extractHeaderBlock(item.Content)
 	})
+
 	codeHeader := slices.Collect(strings.Lines(extractHeaderBlock(string(code))))
+
 	// merge and dedup the headers
 	headers := strings.Join(lo.Uniq(slices.Concat(libHeader, codeHeader)), "\n")
+	log.Debug("Merged and deduplicated headers", "length", len(headers))
 
 	var solution bytes.Buffer
+	log.Debug("Executing solution template modifier")
 	err = template.Must(template.New("template").
 		Funcs(funcMap).Parse(m.Code.Modifier)).
 		Execute(&solution, map[string]interface{}{
@@ -60,16 +71,18 @@ func (m Model) getSolution() string {
 		})
 	unwrap("couldn't execute template on solution", err)
 
+	log.Info("Successfully generated solution string", "size_bytes", solution.Len())
 	return solution.String()
 }
 
-// linkFiles performs a topological sort on library dependencies to determine the correct build order.
-// It reads a root file and identifies libraries referenced within it as starting points.
-// Libraries are scanned to find their direct dependencies on other libraries.
-// The method constructs a dependency graph and then performs a depth-first search (DFS)
-// to order the libraries. It detects and reports cyclic dependencies, exiting on discovery.
-// The result is a slice of Library structs, ordered such that dependencies appear before their dependents.
+// linkFiles performs a depth-first topological sort on the project's library files
+// to resolve inclusion dependencies. It builds a dependency graph by matching
+// configured regex patterns against file contents.
+//
+// Detects cyclic dependencies and fatally exits if one is found. Returns an ordered
+// slice of libraries ensuring that dependencies are always declared before their dependents.
 func (m Model) linkFiles() []Library {
+	log.Debug("Starting library dependency linking")
 	rootFile, err := os.ReadFile(filepath.Join(m.Root, m.getFileName()))
 	unwrap("couldn't read file in linkFiles", err)
 
@@ -81,29 +94,39 @@ func (m Model) linkFiles() []Library {
 			}
 		})
 
+	regTemplate := template.Must(template.New("libReg").Funcs(funcMap).Parse(m.Lib.Regex))
+	var thisRegex bytes.Buffer
+
+	log.Debug("Building dependency graph")
 	for _, n := range nodes {
 		for dep := range nodes {
-			re := regexp.MustCompile(fmt.Sprintf(m.Lib.Regex, regexp.QuoteMeta(dep)))
-			if re.MatchString(n.content) {
+			thisRegex.Reset()
+			err = regTemplate.Execute(&thisRegex, map[string]interface{}{"Name": dep})
+			unwrap("couldn't generate libcheck regex from template", err)
+			if re := regexp.MustCompile(thisRegex.String()); re.MatchString(n.content) {
 				n.deps = append(n.deps, dep)
+				log.Debug("Found dependency", "node", n.name, "depends_on", dep)
 			}
 		}
 	}
 
 	var roots []string
 	for name := range nodes {
-		re := regexp.MustCompile(fmt.Sprintf(m.Lib.Regex, regexp.QuoteMeta(name)))
-		if re.Match(rootFile) {
+		thisRegex.Reset()
+		err = regTemplate.Execute(&thisRegex, map[string]interface{}{"Name": name})
+		unwrap("couldn't generate libcheck regex from template", err)
+		if re := regexp.MustCompile(thisRegex.String()); re.Match(rootFile) {
 			roots = append(roots, name)
+			log.Debug("Identified root dependency", "name", name)
 		}
 	}
+	log.Info("Found library roots", "roots", roots)
 
 	const (
 		white = iota
 		gray
 		black
 	)
-
 	state := map[string]int{}
 	var order []Library
 
@@ -111,18 +134,17 @@ func (m Model) linkFiles() []Library {
 	var dfs func(string)
 	dfs = func(name string) {
 		if state[name] == gray {
-			logger.Error("cyclic library dependency")
+			log.Error("Cyclic library dependency detected", "node", name)
 			os.Exit(1)
 		} else if state[name] == black {
 			return
 		}
-
 		state[name] = gray
+		log.Debug("DFS traversing", "node", name)
 		for _, dep := range nodes[name].deps {
 			dfs(dep)
 		}
 		state[name] = black
-
 		order = append(order, Library{
 			Name:    name,
 			Content: nodes[name].content,
@@ -133,5 +155,6 @@ func (m Model) linkFiles() []Library {
 		dfs(root)
 	}
 
+	log.Info("Successfully linked libraries", "order", lo.Map(order, func(l Library, _ int) string { return l.Name }))
 	return order
 }

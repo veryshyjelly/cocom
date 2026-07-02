@@ -31,6 +31,8 @@ type Rect struct {
 	W, H int
 }
 
+// Contains checks if a given 2D coordinate (x, y) falls within the boundaries
+// of the rectangular UI pane. Used for routing mouse events to the correct viewport.
 func (r Rect) Contains(x, y int) bool {
 	return x >= r.X &&
 		x < r.X+r.W &&

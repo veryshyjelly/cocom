@@ -53,9 +53,12 @@ type Compiler struct {
 	Run     string   `yaml:"run"`
 }
 
-// ReadConfig reads a YAML configuration file from the specified path.
-// It decodes the file's content into a Config struct and returns it.
-// An error is returned if the file cannot be opened or decoded.
+// ReadConfig reads and parses a YAML configuration file from the specified path.
+// It decodes the file's content into a Config struct, validating the structure
+// of the competitive programming environment settings.
+//
+// Returns the populated Config struct and an error if the file cannot be opened
+// or if the YAML decoding fails.
 func ReadConfig(path string) (config Config, err error) {
 	file, err := os.Open(path)
 	if err != nil {
