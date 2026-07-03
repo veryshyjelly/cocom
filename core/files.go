@@ -140,9 +140,11 @@ func (app App) GetFileName() string {
 	log.Debug("Regex captures", "captures", captures)
 
 	var buffer bytes.Buffer
+
+	cleanedTitle := strings.NewReplacer("'", "", "\"", "").Replace(app.Title)
 	err = nameTemplate.Execute(&buffer, map[string]interface{}{
 		"Captures": captures,
-		"Title":    app.Title,
+		"Title":    cleanedTitle,
 	})
 	Unwrap("template error", err)
 
