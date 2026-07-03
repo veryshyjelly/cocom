@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"text/template"
@@ -82,6 +84,21 @@ func extractCodeBlock(source string) string {
 // it logs the error message and immediately terminates the program with exit code 1.
 func Unwrap(message string, err error) {
 	if err != nil {
+		_, _ = fmt.Fprint(os.Stderr,
+			"\x1b[0m"+ // Reset SGR (colors/styles)
+				"\x1b[?25h"+ // Show cursor
+				"\x1b[?1049l"+ // Leave alternate screen
+				"\x1b[?1000l"+ // Disable X10 mouse
+				"\x1b[?1002l"+ // Disable button-event mouse
+				"\x1b[?1003l"+ // Disable all-motion mouse
+				"\x1b[?1005l"+ // Disable UTF-8 mouse
+				"\x1b[?1006l"+ // Disable SGR mouse
+				"\x1b[?1015l"+ // Disable urxvt mouse
+				"\x1b[?2004l"+ // Disable bracketed paste
+				"\x1b[?1l"+ // Normal cursor keys
+				"\x1b>"+ // Normal keypad mode
+				"Please see $TMPDIR/cocom.log\r\n",
+		)
 		log.Fatal(message, "err", err)
 	}
 }
