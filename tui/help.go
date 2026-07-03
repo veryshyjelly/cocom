@@ -1,4 +1,4 @@
-package app
+package tui
 
 import (
 	"charm.land/bubbles/v2/help"
@@ -6,6 +6,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"charm.land/log/v2"
+	"github.com/veryshyjelly/cocom/core"
 )
 
 type Help struct {
@@ -28,7 +29,7 @@ func (h Help) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, DefaultKeyMap.Quit, DefaultKeyMap.Help):
 			return h.parent, nil
 		}
-	case Info:
+	case core.Info:
 		h.parent, cmd = h.parent.Update(msg)
 	case tea.WindowSizeMsg:
 		h.parent, cmd = h.parent.Update(msg)

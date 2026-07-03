@@ -1,8 +1,6 @@
-package app
+package tui
 
-import (
-	"charm.land/bubbles/v2/key"
-)
+import "charm.land/bubbles/v2/key"
 
 type KeyMap struct {
 	Quit         key.Binding

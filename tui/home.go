@@ -1,4 +1,4 @@
-package app
+package tui
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/veryshyjelly/cocom/core"
 )
 
 // View renders the current state of the application into a Bubble Tea View.
@@ -44,19 +45,19 @@ func (m Model) renderHeader() *lipgloss.Layer {
 // test case navigation dots.
 func (m Model) renderMiddle() *lipgloss.Layer {
 	style := lipgloss.NewStyle()
-	status := string(m.status)
-	switch m.status {
-	case NotAvailable:
+	status := string(m.Status)
+	switch m.Status {
+	case core.NotAvailable:
 		status = style.Faint(true).Render(status)
-	case Running:
+	case core.Running:
 		status = style.Faint(true).Foreground(Theme.Warning).Render(status)
-	case Accepted:
+	case core.Accepted:
 		status = style.Foreground(Theme.Success).Render(status)
 	default:
 		status = style.Foreground(Theme.Error).Render(status)
 	}
 	var content string
-	if m.status == Accepted || m.status == WrongAnswer {
+	if m.Status == core.Accepted || m.Status == core.WrongAnswer {
 		if runtime.GOOS == "windows" {
 			content = fmt.Sprintf("Status: %s %.2fs", status, m.Tests[m.index].Time)
 		} else {
@@ -77,9 +78,9 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 		}
 		var clr color.Color
 		switch m.Tests[i].Status {
-		case Accepted:
+		case core.Accepted:
 			clr = lipgloss.Green
-		case NotAvailable:
+		case core.NotAvailable:
 			clr = lipgloss.White
 		default:
 			clr = lipgloss.Red

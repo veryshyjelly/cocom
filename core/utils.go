@@ -1,4 +1,4 @@
-package app
+package core
 
 import (
 	"slices"
@@ -78,9 +78,9 @@ func extractCodeBlock(source string) string {
 	return extractBlock(source, "code", source)
 }
 
-// unwrap is a fatal error handling utility. If the provided error is non-nil,
+// Unwrap is a fatal error handling utility. If the provided error is non-nil,
 // it logs the error message and immediately terminates the program with exit code 1.
-func unwrap(message string, err error) {
+func Unwrap(message string, err error) {
 	if err != nil {
 		log.Fatal(message, "err", err)
 	}

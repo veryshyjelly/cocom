@@ -1,4 +1,4 @@
-package app
+package core
 
 import (
 	"bytes"
@@ -15,36 +15,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
 	"github.com/google/shlex"
-	"github.com/veryshyjelly/cocom/app/memory"
-)
-
-type Problem struct {
-	Title       string
-	Url         string
-	MemoryLimit uint64
-	TimeLimit   uint64
-}
-
-type Testcase struct {
-	Input  string
-	Output string
-	Error  string
-	Answer string
-	Status Status
-	Time   float64
-	Memory uint64 // in kbs
-}
-
-type Status string
-
-const (
-	NotAvailable      Status = "NA"
-	Accepted          Status = "AC"
-	RuntimeError      Status = "RE"
-	CompilationError  Status = "CE"
-	TimeLimitExceeded Status = "TLE"
-	WrongAnswer       Status = "WA"
-	Running           Status = "WIP"
+	"github.com/veryshyjelly/cocom/memory"
 )
 
 // compile builds the generated solution code in an isolated, temporary sandbox directory.
@@ -53,22 +24,22 @@ const (
 // Returns the absolute path to the sandbox directory on success, allowing the caller
 // to execute the binary. Returns an error containing the compiler's standard error
 // output if compilation fails.
-func (m Model) compile() (string, error) {
+func (app App) compile() (string, error) {
 	log.Debug("Creating sandbox directory for compilation")
 	dir, err := os.MkdirTemp("", "sandbox")
-	unwrap("unable to create temporary directory", err)
+	Unwrap("unable to create temporary directory", err)
 
 	log.Debug("Sandbox directory created", "path", dir)
-	solutionFile := m.getSolution()
-	filePath := filepath.Join(dir, m.Compiler.Source)
+	solutionFile := app.getSolution()
+	filePath := filepath.Join(dir, app.Compiler.Source)
 
 	log.Debug("Writing solution to sandbox", "file", filePath)
 	err = os.WriteFile(filePath, []byte(solutionFile), 0644)
-	unwrap("unable to write solution file", err)
+	Unwrap("unable to write solution file", err)
 
 	var stderr bytes.Buffer
-	log.Info("Starting compilation", "compiler", m.Compile, "args", m.Compiler.Args)
-	cmd := exec.Command(m.Compile, m.Compiler.Args...)
+	log.Info("Starting compilation", "compiler", app.Compile, "args", app.Compiler.Args)
+	cmd := exec.Command(app.Compile, app.Compiler.Args...)
 	cmd.Dir = dir
 	cmd.Stderr = &stderr
 
@@ -82,16 +53,16 @@ func (m Model) compile() (string, error) {
 	return dir, nil
 }
 
-// run executes the compiled solution against all provided test cases.
+// Run executes the compiled solution against all provided test cases.
 // It enforces strict time limits using context timeouts, pipes test inputs to stdin,
 // and captures standard output, standard error, and peak memory usage.
 //
 // Returns an updated slice of Testcase structs containing the execution results,
 // performance metrics, and final statuses (AC, WA, TLE, RE).
-func (m Model) run() tea.Msg {
+func (app App) Run() tea.Msg {
 	log.Info("Starting test execution phase")
-	tests := m.Tests
-	dir, err := m.compile()
+	tests := app.Tests
+	dir, err := app.compile()
 	defer func() {
 		log.Debug("Cleaning up sandbox directory", "path", dir)
 		_ = os.RemoveAll(dir)
@@ -106,9 +77,9 @@ func (m Model) run() tea.Msg {
 		return tests
 	}
 
-	args, err := shlex.Split(m.Run)
+	args, err := shlex.Split(app.Config.Run)
 	if err != nil {
-		unwrap("unable to parse run arguments", err)
+		Unwrap("unable to parse run arguments", err)
 	}
 	log.Debug("Parsed run arguments", "args", args)
 
@@ -129,10 +100,10 @@ func (m Model) run() tea.Msg {
 			cmd.Stdout = &stdout
 			cmd.Stderr = &stderr
 
-			timeout := time.Duration(m.TimeLimit) * time.Millisecond
+			timeout := time.Duration(app.TimeLimit) * time.Millisecond
 			log.Debug("Executing test case", "index", i, "timeout", timeout)
 			err = cmd.Start()
-			unwrap("failed to start program", err)
+			Unwrap("failed to start program", err)
 
 			var timedOut atomic.Bool
 			timer := time.AfterFunc(timeout, func() {
@@ -177,17 +148,17 @@ func (m Model) run() tea.Msg {
 		result = append(result, test)
 	}
 
-	finalStatus := getFinalStatus(result)
+	finalStatus := GetFinalStatus(result)
 	log.Info("Finished test execution", "final_status", finalStatus)
 	return result
 }
 
-// getFinalStatus evaluates a slice of executed test cases and determines the overall
+// GetFinalStatus evaluates a slice of executed test cases and determines the overall
 // submission status based on a strict priority hierarchy.
 //
 // The hierarchy prioritizes critical failures: Compilation Error > Runtime Error >
 // TimeLimitExceeded > WrongAnswer > Accepted.
-func getFinalStatus(tests []Testcase) Status {
+func GetFinalStatus(tests []Testcase) Status {
 	switch {
 	case slices.ContainsFunc(tests,
 		func(t Testcase) bool { return t.Status == CompilationError }):

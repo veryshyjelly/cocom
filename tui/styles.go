@@ -1,4 +1,4 @@
-package app
+package tui
 
 import (
 	"image/color"

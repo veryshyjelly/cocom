@@ -1,4 +1,4 @@
-package main
+package watcher
 
 import (
 	"path/filepath"
@@ -7,11 +7,12 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
 	"github.com/fsnotify/fsnotify"
+	"github.com/veryshyjelly/cocom/core"
 )
 
-// fileLoop watches the file in the root directory, when a new file comes
+// FileLoop watches the file in the root directory, when a new file comes
 // with relative path it computes the parent directory and starts watching it
-func fileLoop(w *fsnotify.Watcher, p *tea.Program, root string, files chan string) {
+func FileLoop(w *fsnotify.Watcher, p *tea.Program, root string, files chan string) {
 	var (
 		filename string
 		timer    *time.Timer
@@ -23,7 +24,7 @@ func fileLoop(w *fsnotify.Watcher, p *tea.Program, root string, files chan strin
 			_ = w.Remove(filepath.Dir(filepath.Join(root, filename)))
 			filename = file
 			err := w.Add(filepath.Dir(filepath.Join(root, filename)))
-			unwrap("couldn't watch parent directory", err)
+			core.Unwrap("couldn't watch parent directory", err)
 		case e := <-w.Events:
 			if e.Op&fsnotify.Write == 0 {
 				continue
@@ -41,14 +42,5 @@ func fileLoop(w *fsnotify.Watcher, p *tea.Program, root string, files chan strin
 		case err := <-w.Errors:
 			log.Error(err)
 		}
-	}
-}
-
-// Unwrap is the root-level equivalent of app.unwrap. It logs a fatal error
-// and exits the program if an error occurs during early startup phases,
-// such as CLI parsing or initial config generation.
-func unwrap(message string, err error) {
-	if err != nil {
-		log.Fatal(message, "err", err)
 	}
 }

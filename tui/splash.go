@@ -1,10 +1,11 @@
-package app
+package tui
 
 import (
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/veryshyjelly/cocom/core"
 )
 
 // Splash is used to display the landing page until we get our first info
@@ -15,7 +16,7 @@ type Splash struct {
 	width  int
 }
 
-func NewSplash(home Model) Splash {
+func NewSplash(home tea.Model) Splash {
 	return Splash{home: home}
 }
 
@@ -38,7 +39,7 @@ func (s Splash) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.width = msg.Width - 2
 		s.height = msg.Height - 2
 		s.home, cmd = s.home.Update(msg)
-	case Info:
+	case core.Info:
 		return s.home.Update(msg)
 	}
 	return s, cmd

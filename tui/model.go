@@ -1,4 +1,4 @@
-package app
+package tui
 
 import (
 	"charm.land/bubbles/v2/key"
@@ -6,15 +6,13 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
 	"github.com/fsnotify/fsnotify"
+	"github.com/veryshyjelly/cocom/config"
+	"github.com/veryshyjelly/cocom/core"
 )
 
 type Model struct {
-	Root string
-	Config
-	Problem
-	Tests []Testcase
+	core.App
 
-	status      Status
 	fileChanged bool
 	fileChan    chan string
 
@@ -42,12 +40,10 @@ const (
 // NewModel initializes and returns a new Bubble Tea Model with the provided
 // project root directory and application configuration. It sets the initial
 // execution status to NotAvailable.
-func NewModel(root string, config Config, fileChan chan string) Model {
+func NewModel(root string, config config.Config, fileChan chan string) Model {
 	log.Info("Initializing new model", "root", root)
 	return Model{
-		Root:     root,
-		Config:   config,
-		status:   NotAvailable,
+		App:      core.App{Root: root, Config: config},
 		fileChan: fileChan,
 	}
 }
@@ -73,15 +69,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case key.Matches(msg, DefaultKeyMap.Run):
 			log.Info("Run command triggered")
-			m.status = Running
-			return m, m.run
+			m.Status = core.Running
+			return m, m.Run
 		case key.Matches(msg, DefaultKeyMap.CreateFile):
 			log.Info("Create file command triggered")
-			return m, m.createFile
+			return m, m.CreateFile
 		case key.Matches(msg, DefaultKeyMap.CopyFile):
 			log.Info("Copy file command triggered")
 			m.fileChanged = false
-			return m, m.copyFile
+			return m, m.CopyFile
 		case key.Matches(msg, DefaultKeyMap.AddCase):
 			// TODO ;
 		case key.Matches(msg, DefaultKeyMap.InputAnswer):
@@ -121,27 +117,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width - 2
 		m.height = msg.Height - 2
 		m = m.setLayout()
-	case Info:
+	case core.Info:
 		log.Info("Received new problem info", "title", msg.Name)
 		m = m.setProblem(msg)
 		if m.Config.CreateFile {
 			log.Debug("Auto-creating file based on config")
-			m.createFile()
+			m.CreateFile()
 		}
-		m.fileChan <- m.getFileName()
+		m.fileChan <- m.GetFileName()
 		m = m.updatePanes()
-	case []Testcase:
+	case []core.Testcase:
 		log.Info("Received test case results", "count", len(msg))
 		m.Tests = msg
-		m.status = getFinalStatus(m.Tests)
+		m.Status = core.GetFinalStatus(m.Tests)
 		m = m.updatePanes()
-		log.Info("Updated overall status", "status", m.status)
+		log.Info("Updated overall status", "status", m.Status)
 	case fsnotify.Event:
 		log.Info("Got filechange msg", "filename", msg)
 		m.fileChanged = true
 		if m.Config.RunOnSave {
-			m.status = Running
-			return m, m.run
+			m.Status = core.Running
+			return m, m.Run
 		}
 	}
 	return m, cmd
@@ -205,5 +201,30 @@ func (m Model) setLayout() Model {
 	m.rightViewPort.SetHeight(m.rightPane.H - 1)
 	m.rightViewPort.SetWidth(m.rightPane.W)
 
+	return m
+}
+
+// setProblem updates the model's internal state with a new competitive programming problem.
+// It initializes the test cases, resets the current test index to prevent out-of-bounds errors,
+// and resets the overall execution status.
+func (m Model) setProblem(info core.Info) Model {
+	log.Info("Setting new problem in model", "title", info.Name, "url", info.Url)
+	m.Status = core.NotAvailable
+	m.index = min(m.index, len(info.Tests)-1)
+	// Fill problem and test case in model
+	m.Problem = core.Problem{
+		Title:       info.Name,
+		Url:         info.Url,
+		MemoryLimit: info.MemoryLimit,
+		TimeLimit:   info.TimeLimit,
+	}
+	m.Tests = make([]core.Testcase, 0, len(info.Tests))
+	for _, t := range info.Tests {
+		m.Tests = append(m.Tests, core.Testcase{
+			Input:  t.Input,
+			Answer: t.Output,
+			Status: core.NotAvailable,
+		})
+	}
 	return m
 }

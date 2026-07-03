@@ -11,8 +11,12 @@ import (
 	"charm.land/log/v2"
 	"github.com/alecthomas/kong"
 	"github.com/fsnotify/fsnotify"
-	"github.com/veryshyjelly/cocom/app"
+	"github.com/veryshyjelly/cocom/config"
+	"github.com/veryshyjelly/cocom/core"
+	"github.com/veryshyjelly/cocom/server"
 	"github.com/veryshyjelly/cocom/templates"
+	"github.com/veryshyjelly/cocom/tui"
+	"github.com/veryshyjelly/cocom/watcher"
 )
 
 // CLI represents the command-line interface arguments and flags for the application.
@@ -53,7 +57,7 @@ func main() {
 		log.Info("Info logging enabled", "path", logPath)
 	}
 
-	config, err := app.ReadConfig(cli.Config)
+	cfg, err := config.ReadConfig(cli.Config)
 	if os.IsNotExist(err) {
 		log.Info("config file not found, prompting user for template")
 		var language string
@@ -65,33 +69,33 @@ func main() {
 				huh.NewOption[string]("Ocaml", "ocaml"),
 			).Value(&language).
 			Run()
-		unwrap("can't get language of choice", err)
+		core.Unwrap("can't get language of choice", err)
 
 		data, err := templates.FS.ReadFile(language + ".yml")
-		unwrap("failed to read config template", err)
+		core.Unwrap("failed to read config template", err)
 
 		err = os.WriteFile(cli.Config, data, 0644)
-		unwrap("failed to write config template", err)
+		core.Unwrap("failed to write config template", err)
 
 		log.Info("config template copied, please edit it before running the program again", "path", cli.Config)
 		os.Exit(0)
 	} else if err != nil {
-		unwrap("failed to decode config file", err)
+		core.Unwrap("failed to decode config file", err)
 	}
-	log.Debug("successfully loaded config", "config", config)
+	log.Debug("successfully loaded config", "config", cfg)
 
 	log.Debug("creating watcher for the directory")
 	w, err := fsnotify.NewWatcher()
-	unwrap("creating a new watcher", err)
+	core.Unwrap("creating a new watcher", err)
 	defer w.Close()
 
 	// initiate model and tea program, then start the fileloop
 	fileChan := make(chan string, 10)
-	model := app.NewModel(cli.Root, config, fileChan)
-	p := tea.NewProgram(app.NewSplash(model))
-	go fileLoop(w, p, cli.Root, fileChan)
+	model := tui.NewModel(cli.Root, cfg, fileChan)
+	p := tea.NewProgram(tui.NewSplash(model))
+	go watcher.FileLoop(w, p, cli.Root, fileChan)
 
-	http.HandleFunc("/", app.HandleData(p))
+	http.HandleFunc("/", server.HandleData(p))
 	go func() {
 		log.Info("Starting HTTP server", "addr", "127.0.0.1:27121")
 		err := http.ListenAndServe("127.0.0.1:27121", nil)

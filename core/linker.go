@@ -1,4 +1,4 @@
-package app
+package core
 
 import (
 	"bytes"
@@ -29,13 +29,13 @@ type node struct {
 // It reads the main source file, resolves and topologically sorts library dependencies,
 // extracts and deduplicates header blocks (e.g., #includes), and merges everything
 // into a single, deployable source code string using a configured template modifier.
-func (m Model) getSolution() string {
+func (app App) getSolution() string {
 	log.Debug("Generating final solution string")
-	code, err := os.ReadFile(filepath.Join(m.Root, m.getFileName()))
-	unwrap("couldn't read file in getSolution", err)
+	code, err := os.ReadFile(filepath.Join(app.Root, app.GetFileName()))
+	Unwrap("couldn't read file in getSolution", err)
 
 	// get the lib files in topo sorted order
-	libFiles := m.linkFiles()
+	libFiles := app.linkFiles()
 	log.Debug("Extracting code blocks from libraries", "count", len(libFiles))
 	libCode := lo.Map(libFiles, // extract out the code blocks
 		func(item Library, _ int) Library {
@@ -60,16 +60,16 @@ func (m Model) getSolution() string {
 	var solution bytes.Buffer
 	log.Debug("Executing solution template modifier")
 	err = template.Must(template.New("template").
-		Funcs(funcMap).Parse(m.Code.Modifier)).
+		Funcs(funcMap).Parse(app.Code.Modifier)).
 		Execute(&solution, map[string]interface{}{
-			"Author":   m.Author,
-			"Url":      m.Url,
+			"Author":   app.Author,
+			"Url":      app.Url,
 			"Time":     time.Now().Format("2006/01/02 15:04"),
 			"LibFiles": libCode,
 			"Header":   headers,
 			"Code":     extractCodeBlock(string(code)),
 		})
-	unwrap("couldn't execute template on solution", err)
+	Unwrap("couldn't execute template on solution", err)
 
 	log.Info("Successfully generated solution string", "size_bytes", solution.Len())
 	return solution.String()
@@ -81,12 +81,12 @@ func (m Model) getSolution() string {
 //
 // Detects cyclic dependencies and fatally exits if one is found. Returns an ordered
 // slice of libraries ensuring that dependencies are always declared before their dependents.
-func (m Model) linkFiles() []Library {
+func (app App) linkFiles() []Library {
 	log.Debug("Starting library dependency linking")
-	rootFile, err := os.ReadFile(filepath.Join(m.Root, m.getFileName()))
-	unwrap("couldn't read file in linkFiles", err)
+	rootFile, err := os.ReadFile(filepath.Join(app.Root, app.GetFileName()))
+	Unwrap("couldn't read file in linkFiles", err)
 
-	nodes := lo.MapEntries(m.getLibFiles(),
+	nodes := lo.MapEntries(app.getLibFiles(),
 		func(name, content string) (string, *node) {
 			return name, &node{
 				name:    name,
@@ -94,7 +94,7 @@ func (m Model) linkFiles() []Library {
 			}
 		})
 
-	regTemplate := template.Must(template.New("libReg").Funcs(funcMap).Parse(m.Lib.Regex))
+	regTemplate := template.Must(template.New("libReg").Funcs(funcMap).Parse(app.Lib.Regex))
 	var thisRegex bytes.Buffer
 
 	log.Debug("Building dependency graph")
@@ -102,7 +102,7 @@ func (m Model) linkFiles() []Library {
 		for dep := range nodes {
 			thisRegex.Reset()
 			err = regTemplate.Execute(&thisRegex, map[string]interface{}{"Name": dep})
-			unwrap("couldn't generate libcheck regex from template", err)
+			Unwrap("couldn't generate libcheck regex from template", err)
 			if re := regexp.MustCompile(thisRegex.String()); re.MatchString(n.content) {
 				n.deps = append(n.deps, dep)
 				log.Debug("Found dependency", "node", n.name, "depends_on", dep)
@@ -114,7 +114,7 @@ func (m Model) linkFiles() []Library {
 	for name := range nodes {
 		thisRegex.Reset()
 		err = regTemplate.Execute(&thisRegex, map[string]interface{}{"Name": name})
-		unwrap("couldn't generate libcheck regex from template", err)
+		Unwrap("couldn't generate libcheck regex from template", err)
 		if re := regexp.MustCompile(thisRegex.String()); re.Match(rootFile) {
 			roots = append(roots, name)
 			log.Debug("Identified root dependency", "name", name)
