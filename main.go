@@ -64,6 +64,7 @@ func main() {
 		err := huh.NewSelect[string]().
 			Title("Pick a language (doesn't matter just pick one).").
 			Options(
+				huh.NewOption[string]("C++", "cpp"),
 				huh.NewOption[string]("Rust", "rust"),
 				huh.NewOption[string]("Python", "python"),
 				huh.NewOption[string]("Ocaml", "ocaml"),

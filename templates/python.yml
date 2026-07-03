@@ -59,7 +59,6 @@ compiler:
   name: Python
   source: script.py
   compile: python3 # empty if no compilation to be performed
-  # main.extension automatically detected as solution file
   args:
     - -m
     - py_compile
