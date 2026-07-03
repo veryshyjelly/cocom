@@ -1,0 +1,76 @@
+version: 1.0
+
+author: YOUR_NAME_HERE
+
+editor: "code {{ .Filename }}"
+
+# How to generate the destination filename.
+filename:
+  rules:
+    - site: codeforces.com
+      regex: "(?:problemset/problem|contest)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
+      template: './src/bin/{{ index .Captures 1 }}-{{ index .Captures 2 }}-{{ .Title | stripPrefix "."  | toKebabCase }}.cpp'
+
+    - site: atcoder.jp
+      regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"
+      template: './src/bin/{{ index .Captures 2 }}-{{ index .Captures 3 | toLowerCase }}{{if gt (.Title | stripPrefix "-" | len) 0}}-{{ .Title | stripPrefix "-"  | toKebabCase }}{{- end -}}.cpp'
+
+    - site: cses.fi
+      regex: "problemset/task/(\\d+)/?$"
+      template: './src/bin/cses-{{ index .Captures 1 }}-{{ .Title | toKebabCase }}.cpp'
+
+    - site: judge.u-aizu.ac.jp
+      regex: "description\\.jsp\\?id=([A-Za-z0-9_]+)"
+      template: './src/bin/aoj-{{ index .Captures 1 }}-{{ .Title | toKebabCase }}.cpp'
+
+    - site: open.kattis.com
+      regex: "problems/([^/?]+)/?"
+      template: "./src/bin/{{ index .Captures 1 }}.cpp"
+
+# Base source template.
+template:
+  source: ./src/main.cpp
+  modifier: |
+    // Created by {{ .Author }} at {{ .Time }} 
+    // {{ .Url }} 
+    {{ .Code }}
+
+# Optional code post-processing.
+code:
+  modifier: |
+    {{ .Header }}
+
+    {{ range .LibFiles }}
+    
+    {{ .Content }}
+    
+    {{end}}
+
+    {{ .Code }}
+
+# Library injection.
+lib:
+  regex: "#include <{{.Name}}.hpp>"
+  include:
+    _: "./src/lib/"
+
+# Compilation.
+compiler:
+  name: C++
+  source: main.cpp
+  compile: g++ # empty if no compilation to be performed
+  # main.extension automatically detected as solution file
+  args: 
+    - -std=c++23 
+    - -fmax-errors=10 
+    - -lm 
+    - -Wall
+    - -O2 
+    - main.cpp
+    - -o
+    - main
+  run: ./main
+
+# Behaviour
+create_file: true
+run_on_save: true
