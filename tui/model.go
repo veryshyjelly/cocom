@@ -99,12 +99,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			hi := Help{parent: m, height: m.height, width: m.width}
 			return hi, nil
 		}
-		m = m.updatePanes()
 	case tea.MouseMsg:
 		if m.rightPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
 			m.rightViewPort, cmd = m.rightViewPort.Update(msg)
 		} else if m.leftPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
 			m.leftViewPort, cmd = m.leftViewPort.Update(msg)
+		} else if len(m.Tests) > 0 {
+			switch msg.Mouse().Button {
+			case tea.MouseWheelUp:
+				m.index = (m.index + 1) % len(m.Tests)
+			case tea.MouseWheelDown:
+				m.index = (m.index - 1 + len(m.Tests)) % len(m.Tests)
+			}
 		}
 	case tea.WindowSizeMsg:
 		log.Debug("Window resized", "width", msg.Width, "height", msg.Height)
@@ -126,12 +132,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.CreateFile()
 		}
 		m.fileChan <- m.GetFileName()
-		m = m.updatePanes()
 	case []core.Testcase:
 		log.Info("Received test case results", "count", len(msg))
 		m.Tests = msg
 		m.Status = core.GetFinalStatus(m.Tests)
-		m = m.updatePanes()
 		log.Info("Updated overall status", "status", m.Status)
 	case fsnotify.Event:
 		log.Info("Got filechange msg", "filename", msg)
@@ -141,7 +145,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.Run
 		}
 	}
-	return m, cmd
+	return m.updatePanes(), cmd
 }
 
 // updatePanes synchronizes the content of the left and right UI viewports with
