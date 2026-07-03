@@ -136,13 +136,14 @@ run_on_save: true   # Auto-run tests when the file watcher detects changes
 | :--- | :--- |
 | `r` / `Ctrl+'` | **Run** test cases manually |
 | `f` | **Create** boilerplate file |
+| `c` | **Copy** solution file |
 | `a` | **Add** custom test case |
 | `q` / `Esc` / `Ctrl+C` | **Quit** application |
 | | |
-| `1` / `i` | View: **Input** & **Answer** |
-| `2` / `o` | View: **Input** & **Output** |
-| `3` / `e` | View: **Input** & **Error** |
-| `4` / `c` | View: **Answer** & **Output** |
+| `1` / `j` | View: **Input** & **Answer** |
+| `2` / `k` | View: **Input** & **Output** |
+| `3` / `l` | View: **Input** & **Error** |
+| `4` / `;` | View: **Answer** & **Output** |
 | | |
 | `→` / `Tab` | **Next** test case |
 | `←` / `Shift+Tab`| **Previous** test case |
