@@ -47,14 +47,17 @@ func (app App) getSolution() string {
 
 	// extract out headers from each lib file
 	log.Debug("Extracting header blocks from libraries")
-	libHeader := lo.Map(libFiles, func(item Library, _ int) string {
-		return extractHeaderBlock(item.Content)
+	libHeader := lo.Map(libFiles, func(item Library, _ int) []string {
+		return lo.Map(strings.Split(extractHeaderBlock(item.Content), "\n"),
+			func(s string, _ int) string { return strings.TrimSpace(s) })
 	})
+	codeHeader := lo.Map(strings.Split(extractHeaderBlock(string(code)), "\n"),
+		func(s string, _ int) string { return strings.TrimSpace(s) })
 
-	codeHeader := slices.Collect(strings.Lines(extractHeaderBlock(string(code))))
+	allheaders := append(libHeader, codeHeader)
 
 	// merge and dedup the headers
-	headers := strings.Join(lo.Uniq(slices.Concat(libHeader, codeHeader)), "\n")
+	headers := strings.Join(lo.Uniq(slices.Concat(allheaders...)), "\n")
 	log.Debug("Merged and deduplicated headers", "length", len(headers))
 
 	var solution bytes.Buffer

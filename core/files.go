@@ -173,7 +173,7 @@ func (app App) getLibFiles() map[string]string {
 			dir, err := os.ReadDir(location)
 			Unwrap("couldn't read lib directory", err)
 			for _, d := range dir {
-				if !d.IsDir() && filepath.Ext(d.Name()) == extension {
+				if !d.IsDir() {
 					libFile, err := os.ReadFile(filepath.Join(location, d.Name()))
 					Unwrap("couldn't read lib file", err)
 					libFiles[strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))] = string(libFile)
