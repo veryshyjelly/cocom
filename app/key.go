@@ -1,9 +1,7 @@
 package app
 
 import (
-	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/key"
-	"charm.land/lipgloss/v2"
 )
 
 type KeyMap struct {
@@ -11,6 +9,7 @@ type KeyMap struct {
 	Run          key.Binding
 	CreateFile   key.Binding
 	CopyFile     key.Binding
+	AddCase      key.Binding
 	InputAnswer  key.Binding
 	InputOutput  key.Binding
 	InputError   key.Binding
@@ -32,7 +31,7 @@ func (k KeyMap) ShortHelp() []key.Binding {
 // for the Bubble Tea help bubble's expanded, full-screen view.
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.CreateFile, k.CopyFile, k.Run, k.NextCase, k.PreviousCase},
+		{k.CreateFile, k.CopyFile, k.Run, k.PreviousCase, k.NextCase},
 		{k.InputAnswer, k.InputOutput, k.InputError, k.AnswerOutput, k.Quit},
 	}
 }
@@ -60,20 +59,4 @@ var DefaultKeyMap = KeyMap{
 		key.WithHelp("◀/⇧⇥", "previous case")),
 	Help: key.NewBinding(key.WithKeys("?"),
 		key.WithHelp("?", "toggle help")),
-}
-
-// renderHelp renders the full-screen help interface displaying all available
-// keyboard shortcuts. The view is dynamically centered within the current
-// terminal dimensions.
-func (m Model) renderHelp() string {
-	h := help.New()
-	h.ShowAll = true
-	h.SetWidth(m.width)
-	return lipgloss.Place(
-		m.width,
-		m.height,
-		lipgloss.Center,
-		lipgloss.Center,
-		h.View(DefaultKeyMap),
-	)
 }

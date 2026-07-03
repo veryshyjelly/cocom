@@ -5,6 +5,7 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
+	"github.com/fsnotify/fsnotify"
 )
 
 type Model struct {
@@ -36,7 +37,6 @@ const (
 	InputOutput
 	InputError
 	AnswerOutput
-	ShowHelp
 )
 
 // NewModel initializes and returns a new Bubble Tea Model with the provided
@@ -47,7 +47,7 @@ func NewModel(root string, config Config, fileChan chan string) Model {
 	return Model{
 		Root:     root,
 		Config:   config,
-		status:   NoData,
+		status:   NotAvailable,
 		fileChan: fileChan,
 	}
 }
@@ -71,17 +71,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, DefaultKeyMap.Quit):
 			log.Info("Quit command received")
 			return m, tea.Quit
-		case key.Matches(msg, DefaultKeyMap.Run) && len(m.Tests) > 0:
+		case key.Matches(msg, DefaultKeyMap.Run):
 			log.Info("Run command triggered")
 			m.status = Running
 			return m, m.run
-		case key.Matches(msg, DefaultKeyMap.CreateFile) && m.status != NoData:
+		case key.Matches(msg, DefaultKeyMap.CreateFile):
 			log.Info("Create file command triggered")
 			return m, m.createFile
 		case key.Matches(msg, DefaultKeyMap.CopyFile):
 			log.Info("Copy file command triggered")
 			m.fileChanged = false
 			return m, m.copyFile
+		case key.Matches(msg, DefaultKeyMap.AddCase):
+			// TODO ;
 		case key.Matches(msg, DefaultKeyMap.InputAnswer):
 			m.mode = InputAnswer
 		case key.Matches(msg, DefaultKeyMap.InputOutput):
@@ -97,9 +99,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.index = (m.index - 1 + len(m.Tests)) % len(m.Tests)
 			log.Debug("Previous test case", "index", m.index)
 		case key.Matches(msg, DefaultKeyMap.Help):
-			m.mode = ShowHelp * (1 - m.mode/ShowHelp)
+			hi := Help{parent: m, height: m.height, width: m.width}
+			return hi, nil
 		}
-		m.updatePanes()
+		m = m.updatePanes()
 	case tea.MouseMsg:
 		if m.rightPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
 			m.rightViewPort, cmd = m.rightViewPort.Update(msg)
@@ -117,27 +120,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.width = msg.Width - 2
 		m.height = msg.Height - 2
-		m.setLayout()
-		m.updatePanes()
+		m = m.setLayout()
 	case Info:
 		log.Info("Received new problem info", "title", msg.Name)
-		m.setProblem(msg)
+		m = m.setProblem(msg)
 		if m.Config.CreateFile {
 			log.Debug("Auto-creating file based on config")
 			m.createFile()
 		}
 		m.fileChan <- m.getFileName()
-		m.updatePanes()
+		m = m.updatePanes()
 	case []Testcase:
 		log.Info("Received test case results", "count", len(msg))
 		m.Tests = msg
 		m.status = getFinalStatus(m.Tests)
-		m.updatePanes()
+		m = m.updatePanes()
 		log.Info("Updated overall status", "status", m.status)
-	case FileChanged:
+	case fsnotify.Event:
 		log.Info("Got filechange msg", "filename", msg)
 		m.fileChanged = true
-		if m.Config.RunOnSave && len(m.Tests) > 0 {
+		if m.Config.RunOnSave {
 			m.status = Running
 			return m, m.run
 		}
@@ -145,39 +147,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// View renders the current state of the application into a Bubble Tea View.
-// It conditionally delegates rendering to the help screen, the idle waiting screen,
-// or the main problem interface based on the current mode and URL state.
-func (m Model) View() tea.View {
-	var s string
-	// conditionally render different views based on the mode
-	switch {
-	case m.mode == ShowHelp:
-		s = m.renderHelp()
-	case m.status == NoData:
-		s = m.renderWaitMessage()
-	default:
-		s = m.renderInfo()
-	}
-
-	// render the view inside a bordered box
-	s = containerStyle.
-		Height(m.height + 2).
-		Width(m.width + 2).
-		Render(s)
-
-	v := tea.NewView(s)
-	v.MouseMode = tea.MouseModeCellMotion
-	v.AltScreen = true
-	return v
-}
-
 // updatePanes synchronizes the content of the left and right UI viewports with
 // the currently selected test case and the active display mode (e.g., Input/Output,
 // Input/Answer, Input/Error).
-func (m *Model) updatePanes() {
+func (m Model) updatePanes() Model {
 	if len(m.Tests) == 0 {
-		return
+		return m
 	}
 
 	width := m.leftPane.W
@@ -187,24 +162,25 @@ func (m *Model) updatePanes() {
 		wrapContent(testCase.Output, width), wrapContent(testCase.Answer, width)
 	erro := wrapContent(testCase.Error, width)
 
-	if m.mode == InputOutput {
-		m.leftViewPort.SetContent(input)
+	m.leftViewPort.SetContent(input)
+	switch m.mode {
+	case InputOutput:
 		m.rightViewPort.SetContent(output)
-	} else if m.mode == InputAnswer {
-		m.leftViewPort.SetContent(input)
+	case InputAnswer:
 		m.rightViewPort.SetContent(answer)
-	} else if m.mode == InputError {
-		m.leftViewPort.SetContent(input)
+	case InputError:
 		m.rightViewPort.SetContent(erro)
-	} else if m.mode == AnswerOutput {
+	case AnswerOutput:
 		m.leftViewPort.SetContent(answer)
 		m.rightViewPort.SetContent(output)
 	}
+
+	return m
 }
 
 // setLayout recalculates and applies the dimensions, padding, and coordinates
 // for the split-pane UI layout based on the current terminal window size.
-func (m *Model) setLayout() {
+func (m Model) setLayout() Model {
 	m.leftPane = Rect{
 		X: 0,
 		Y: 5,
@@ -228,4 +204,6 @@ func (m *Model) setLayout() {
 	// 1 for label
 	m.rightViewPort.SetHeight(m.rightPane.H - 1)
 	m.rightViewPort.SetWidth(m.rightPane.W)
+
+	return m
 }

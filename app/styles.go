@@ -26,6 +26,27 @@ var (
 
 var Theme = Gold
 
+var (
+	containerStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(Theme.Border)
+
+	waitMessageStyle = lipgloss.NewStyle().
+				Foreground(Theme.Foreground)
+
+	headerStyle = lipgloss.NewStyle().
+			Foreground(Theme.Foreground).
+			PaddingBottom(1).
+			AlignHorizontal(lipgloss.Center)
+
+	labelStyle = lipgloss.NewStyle().Faint(true)
+
+	textAreaStyle = lipgloss.NewStyle().
+			Padding(0, 1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(Theme.Border)
+)
+
 type Rect struct {
 	X, Y int
 	W, H int

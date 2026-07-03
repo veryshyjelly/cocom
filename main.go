@@ -84,11 +84,12 @@ func main() {
 	w, err := fsnotify.NewWatcher()
 	unwrap("creating a new watcher", err)
 	defer w.Close()
+
 	// initiate model and tea program, then start the fileloop
 	fileChan := make(chan string, 10)
 	model := app.NewModel(cli.Root, config, fileChan)
-	p := tea.NewProgram(model)
-	go app.FileLoop(w, p, cli.Root, fileChan)
+	p := tea.NewProgram(app.NewSplash(model))
+	go fileLoop(w, p, cli.Root, fileChan)
 
 	http.HandleFunc("/", app.HandleData(p))
 	go func() {

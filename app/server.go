@@ -47,7 +47,7 @@ func HandleData(p *tea.Program) func(http.ResponseWriter, *http.Request) {
 // setProblem updates the model's internal state with a new competitive programming problem.
 // It initializes the test cases, resets the current test index to prevent out-of-bounds errors,
 // and resets the overall execution status.
-func (m *Model) setProblem(info Info) {
+func (m Model) setProblem(info Info) Model {
 	log.Info("Setting new problem in model", "title", info.Name, "url", info.Url)
 	m.status = NotAvailable
 	m.index = min(m.index, len(info.Tests)-1)
@@ -66,4 +66,5 @@ func (m *Model) setProblem(info Info) {
 			Status: NotAvailable,
 		})
 	}
+	return m
 }

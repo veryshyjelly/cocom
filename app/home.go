@@ -6,56 +6,26 @@ import (
 	"runtime"
 	"strings"
 
-	"charm.land/bubbles/v2/help"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
-var (
-	containerStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(Theme.Border)
-
-	waitMessageStyle = lipgloss.NewStyle().
-				Foreground(Theme.Foreground)
-
-	headerStyle = lipgloss.NewStyle().
-			Foreground(Theme.Foreground).
-			PaddingBottom(1).
-			AlignHorizontal(lipgloss.Center)
-
-	labelStyle = lipgloss.NewStyle().Faint(true)
-
-	textAreaStyle = lipgloss.NewStyle().
-			Padding(0, 1).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(Theme.Border)
-)
-
-// renderWaitMessage renders the idle state UI, displaying a prompt instructing
-// the user to select a problem via the browser extension, alongside the compact
-// help menu at the bottom of the screen.
-func (m Model) renderWaitMessage() string {
-	s := "Select problem from competitive companion"
-	content := lipgloss.NewLayer(lipgloss.Place(
-		m.width,
-		m.height,
-		lipgloss.Center,
-		lipgloss.Center,
-		waitMessageStyle.Render(s),
-	))
-	h := help.New()
-	helpLayer := lipgloss.NewLayer(
-		lipgloss.PlaceHorizontal(m.width, lipgloss.Center,
-			h.View(DefaultKeyMap)),
-	).Y(m.height - 1)
-	return lipgloss.NewCompositor(content, helpLayer).Render()
-}
-
-// renderInfo composes and renders the main active UI, combining the problem header,
-// status metrics, and the split-pane test case viewports into a single layered view.
-func (m Model) renderInfo() string {
+// View renders the current state of the application into a Bubble Tea View.
+// It conditionally delegates rendering to the help screen, the idle waiting screen,
+// or the main problem interface based on the current mode and URL state.
+func (m Model) View() tea.View {
+	// compose all the layers
 	compositer := lipgloss.NewCompositor(m.renderHeader(), m.renderMiddle(), m.renderBody())
-	return compositer.Render()
+	// render the view inside a bordered box
+	s := containerStyle.
+		Height(m.height + 2).
+		Width(m.width + 2).
+		Render(compositer.Render())
+
+	v := tea.NewView(s)
+	v.MouseMode = tea.MouseModeCellMotion
+	v.AltScreen = true
+	return v
 }
 
 // renderHeader renders the top header layer containing the current problem's title,

@@ -38,14 +38,13 @@ type Testcase struct {
 type Status string
 
 const (
-	NoData           Status = "ND"
-	NotAvailable     Status = "NA"
-	Accepted         Status = "AC"
-	RuntimeError     Status = "RE"
-	CompilationError Status = "CE"
-	TimeLimitError   Status = "TLE"
-	WrongAnswer      Status = "WA"
-	Running          Status = "WIP"
+	NotAvailable      Status = "NA"
+	Accepted          Status = "AC"
+	RuntimeError      Status = "RE"
+	CompilationError  Status = "CE"
+	TimeLimitExceeded Status = "TLE"
+	WrongAnswer       Status = "WA"
+	Running           Status = "WIP"
 )
 
 // compile builds the generated solution code in an isolated, temporary sandbox directory.
@@ -154,7 +153,7 @@ func (m Model) run() tea.Msg {
 			// determine status based on error and output
 			switch {
 			case timedOut.Load():
-				test.Status = TimeLimitError
+				test.Status = TimeLimitExceeded
 				log.Warn("Test case TLE", "index", i, "time", test.Time)
 			case err != nil:
 				test.Status = RuntimeError
@@ -187,7 +186,7 @@ func (m Model) run() tea.Msg {
 // submission status based on a strict priority hierarchy.
 //
 // The hierarchy prioritizes critical failures: Compilation Error > Runtime Error >
-// Time Limit Exceeded > Wrong Answer > Accepted.
+// TimeLimitExceeded > WrongAnswer > Accepted.
 func getFinalStatus(tests []Testcase) Status {
 	switch {
 	case slices.ContainsFunc(tests,
@@ -197,8 +196,8 @@ func getFinalStatus(tests []Testcase) Status {
 		func(t Testcase) bool { return t.Status == RuntimeError }):
 		return RuntimeError
 	case slices.ContainsFunc(tests,
-		func(t Testcase) bool { return t.Status == TimeLimitError }):
-		return TimeLimitError
+		func(t Testcase) bool { return t.Status == TimeLimitExceeded }):
+		return TimeLimitExceeded
 	case slices.ContainsFunc(tests,
 		func(t Testcase) bool { return t.Status == WrongAnswer }):
 		return WrongAnswer
