@@ -136,6 +136,7 @@ run_on_save: true   # Auto-run tests when the file watcher detects changes
 | :--- | :--- |
 | `r` / `Ctrl+'` | **Run** test cases manually |
 | `f` | **Create** boilerplate file |
+| `a` | **Add** custom test case |
 | `q` / `Esc` / `Ctrl+C` | **Quit** application |
 | | |
 | `1` / `i` | View: **Input** & **Answer** |

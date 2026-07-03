@@ -29,8 +29,8 @@ func (k KeyMap) ShortHelp() []key.Binding {
 // for the Bubble Tea help bubble's expanded, full-screen view.
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.CreateFile, k.CopyFile, k.Run, k.PreviousCase, k.NextCase},
-		{k.InputAnswer, k.InputOutput, k.InputError, k.AnswerOutput, k.Quit},
+		{k.Run, k.CreateFile, k.CopyFile, k.AddCase, k.PreviousCase, k.NextCase},
+		{k.InputAnswer, k.InputOutput, k.InputError, k.AnswerOutput, k.Help, k.Quit},
 	}
 }
 
@@ -43,6 +43,8 @@ var DefaultKeyMap = KeyMap{
 		key.WithHelp("f", "create file")),
 	CopyFile: key.NewBinding(key.WithKeys("c", "ctrl+c"),
 		key.WithHelp("c", "copy file")),
+	AddCase: key.NewBinding(key.WithKeys("a", "ctrl+n"),
+		key.WithHelp("a", "add case")),
 	InputAnswer: key.NewBinding(key.WithKeys("1", "j"),
 		key.WithHelp("1/j", "input & answer")),
 	InputOutput: key.NewBinding(key.WithKeys("2", "k"),

@@ -79,7 +79,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.fileChanged = false
 			return m, m.CopyFile
 		case key.Matches(msg, DefaultKeyMap.AddCase):
-			// TODO ;
+			form := NewAddTestCase(m)
+			return form, form.Init()
 		case key.Matches(msg, DefaultKeyMap.InputAnswer):
 			m.mode = InputAnswer
 		case key.Matches(msg, DefaultKeyMap.InputOutput):
