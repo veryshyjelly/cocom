@@ -174,7 +174,7 @@ func (app App) getLibFiles() map[string]string {
 				if !d.IsDir() && filepath.Ext(d.Name()) == extension {
 					libFile, err := os.ReadFile(filepath.Join(location, d.Name()))
 					Unwrap("couldn't read lib file", err)
-					libFiles[filepath.Base(d.Name())] = string(libFile)
+					libFiles[strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))] = string(libFile)
 					log.Debug("Loaded library file from directory", "file", d.Name())
 				}
 			}

@@ -114,6 +114,7 @@ func (app App) linkFiles() []Library {
 	for name := range nodes {
 		thisRegex.Reset()
 		err = regTemplate.Execute(&thisRegex, map[string]interface{}{"Name": name})
+		log.Debug("Regex for ", "node", name, "regex", thisRegex.String())
 		Unwrap("couldn't generate libcheck regex from template", err)
 		if re := regexp.MustCompile(thisRegex.String()); re.Match(rootFile) {
 			roots = append(roots, name)

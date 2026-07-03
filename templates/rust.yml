@@ -2,14 +2,14 @@ version: 1.0
 
 author: YOUR_NAME_HERE
 
-editor: "code {{ .FileName }}"
+editor: "code {{ .Filename }}"
 
 # How to generate the destination filename.
 filename:
   rules:
     - site: codeforces.com
       regex: "(?:problemset/problem|contest)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
-      template: './src/bin/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | stripPrefix "-"  | toSnakeCase }}.rs'
+      template: './src/bin/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | stripPrefix "."  | toSnakeCase }}.rs'
 
     - site: atcoder.jp
       regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"
@@ -17,11 +17,11 @@ filename:
 
     - site: cses.fi
       regex: "problemset/task/(\\d+)/?$"
-      template: './src/bin/cses_{{ index .Captures 1 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.rs'
+      template: './src/bin/cses_{{ index .Captures 1 }}_{{ .Title | toSnakeCase }}.rs'
 
     - site: judge.u-aizu.ac.jp
       regex: "description\\.jsp\\?id=([A-Za-z0-9_]+)"
-      template: './src/bin/aoj_{{ index .Captures 1 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.rs'
+      template: './src/bin/aoj_{{ index .Captures 1 }}_{{ .Title | toSnakeCase }}.rs'
 
     - site: open.kattis.com
       regex: "problems/([^/?]+)/?"
@@ -50,7 +50,7 @@ code:
 
 # Library injection.
 lib:
-  regex: "use\\s*(super::)?{{name}}(::|;)"
+  regex: "use\\s*(super::)?{{.Name}}(::|;)"
   include:
     _: "./src/lib/"
 

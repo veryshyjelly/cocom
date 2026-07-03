@@ -9,7 +9,7 @@ filename:
   rules:
     - site: codeforces.com
       regex: "(?:problemset/problem|contest)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
-      template: './src/bin/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.ml'
+      template: './src/bin/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | stripPrefix "." | toSnakeCase }}.ml'
 
     - site: atcoder.jp
       regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"

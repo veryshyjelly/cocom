@@ -33,6 +33,10 @@ func (m *AddTestCase) Init() tea.Cmd {
 }
 
 func (m *AddTestCase) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if k, ok := msg.(tea.KeyMsg); ok && k.String() == "esc" {
+		return m.parent, nil
+	}
+
 	var cmd tea.Cmd
 	m.form, cmd = m.form.Update(msg)
 

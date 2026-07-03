@@ -2,26 +2,26 @@ version: 1.0
 
 author: YOUR_NAME_HERE
 
-editor: "code {{ .FileName }}"
+editor: "code {{ .Filename }}"
 
 # How to generate the destination filename.
 filename:
   rules:
     - site: codeforces.com
       regex: "(?:problemset/problem|contest)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
-      template: './src/cf_{{ index .Captures 1 }}_{{ index .Captures 2 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.py'
+      template: './src/{{ index .Captures 1 }}-{{ index .Captures 2 }}-{{ .Title | stripPrefix "." | toKebabCase }}.py'
 
     - site: atcoder.jp
       regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"
-      template: './src/{{ index .Captures 2 }}_{{ index .Captures 3 | toLowerCase }}{{if gt (len .Title) 0}}_{{ .Title | stripPrefix "-" | toSnakeCase }}{{- end -}}.py'
+      template: './src/{{ index .Captures 2 }}-{{ index .Captures 3 | toLowerCase }}{{if gt (len .Title) 0}}-{{ .Title | stripPrefix "-" | toKebabCase }}{{- end -}}.py'
 
     - site: cses.fi
       regex: "problemset/task/(\\d+)/?$"
-      template: './src/cses_{{ index .Captures 1 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.py'
+      template: './src/cses-{{ index .Captures 1 }}-{{ .Title | toKebabCase }}.py'
 
     - site: judge.u-aizu.ac.jp
       regex: "description\\.jsp\\?id=([A-Za-z0-9_]+)"
-      template: './src/aoj_{{ index .Captures 1 }}_{{ .Title | stripPrefix "-" | toSnakeCase }}.py'
+      template: './src/aoj-{{ index .Captures 1 }}-{{ .Title | toKebabCase }}.py'
 
     - site: open.kattis.com
       regex: "problems/([^/?]+)/?"
@@ -29,7 +29,7 @@ filename:
 
 # Base source template.
 template:
-  source: ./src/main.py
+  source: ./main.py
   modifier: |
     # Created by {{ .Author }} at {{ .Time }} 
     # {{ .Url }}
@@ -50,7 +50,7 @@ code:
 
 # Library injection.
 lib:
-  regex: "(from.*{{name}} import .*)|(from.*\\.{{name}} import .*)"
+  regex: "from.*{{.Name}} import .*"
   include:
     _: "./cpio/"
 
