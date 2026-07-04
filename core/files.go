@@ -27,12 +27,6 @@ func (app App) CreateFile() tea.Msg {
 	filename := filepath.Join(app.Root, app.GetFileName())
 	log.Info("Attempting to create file", "filename", filename)
 
-	defer func() {
-		if app.Config.Editor != "" {
-			app.openEditor()
-		}
-	}()
-
 	// if the file already exists then we ought not do anything
 	_, err := os.ReadFile(filename)
 	if err == nil {
@@ -70,12 +64,12 @@ func (app App) CreateFile() tea.Msg {
 	return nil
 }
 
-// openEditor constructs and executes an external editor command to open the current problem's file.
+// OpenEditor constructs and executes an external editor command to open the current problem's file.
 // It renders the editor command from a template defined in the model's configuration.
 // The template receives the full path to the file as "Filename".
 // The command is then split into arguments and executed in the `m.Root` directory.
 // Errors during template rendering, command parsing, or execution are logged.
-func (app App) openEditor() {
+func (app App) OpenEditor() tea.Cmd {
 	filename := filepath.Join(app.Root, app.GetFileName())
 	var editor bytes.Buffer
 	err := template.Must(template.New("editor").
@@ -91,12 +85,10 @@ func (app App) openEditor() {
 	log.Debug("Executing editor command", "args", args)
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = app.Root
-	err = cmd.Run()
-	if err != nil {
-		log.Error("Failed to open editor", "err", err, "args", args)
-	} else {
-		log.Info("Editor closed")
-	}
+
+	return tea.ExecProcess(cmd, func(err error) tea.Msg {
+		return nil
+	})
 }
 
 // CopyFile copies the final solution to clipboard

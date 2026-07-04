@@ -73,7 +73,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.Run
 		case key.Matches(msg, DefaultKeyMap.CreateFile):
 			log.Info("Create file command triggered")
-			return m, m.CreateFile
+			m.CreateFile()
+			if m.Config.Editor != "" {
+				return m, m.OpenEditor()
+			}
 		case key.Matches(msg, DefaultKeyMap.CopyFile):
 			log.Info("Copy file command triggered")
 			m.fileChanged = false
@@ -132,6 +135,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.CreateFile()
 		}
 		m.fileChan <- m.GetFileName()
+		if m.Config.Editor != "" {
+			return m, m.OpenEditor()
+		}
 	case []core.Testcase:
 		log.Info("Received test case results", "count", len(msg))
 		m.Tests = msg
