@@ -13,7 +13,7 @@
 
 ## Features
 
-- **Competitive Companion Server**: Local HTTP endpoint (`127.0.0.1:27121`) to receive problem metadata, constraints, and sample tests directly from the browser extension.
+- **Competitive Companion Server**: Local HTTP endpoint (`127.0.0.1:6174`) to receive problem metadata, constraints, and sample tests directly from the browser extension.
 - **Regex-Based File Routing**: Maps problem URLs to local directory structures and filenames using configurable regex captures and Go templates.
 - **Snippet Linker**: Parses custom `@head` and `@code` tags in your local library, topologically sorts dependencies, and merges them into the final submission payload.
 - **Watch & Run**: Filesystem watcher that automatically detects file saves, compiles the code, and pipes sample tests to the binary.

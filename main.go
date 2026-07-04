@@ -98,8 +98,8 @@ func main() {
 
 	http.HandleFunc("/", server.HandleData(p))
 	go func() {
-		log.Info("Starting HTTP server", "addr", "127.0.0.1:27121")
-		err := http.ListenAndServe("127.0.0.1:27121", nil)
+		log.Info("Starting HTTP server", "addr", "127.0.0.1:6174")
+		err := http.ListenAndServe("127.0.0.1:6174", nil)
 		log.Fatal("http server crashed", "err", err)
 	}()
 
