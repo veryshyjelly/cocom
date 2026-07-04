@@ -25,8 +25,14 @@
 
 ## 🎥 Demo
 
-> *Example workflow using VSCode and Cocom*
-<img width="1280" alt="cocom_tutorial" src="https://github.com/user-attachments/assets/9137a89e-df72-4f01-831b-3c37df89ad84" />
+> *Example workflow using Neovim*
+<img width="1280" alt="cocom_tutorial" src="tutorial_nvim.gif" />
+> Tip: Press f to edit the file again
+
+---
+
+> *Example workflow using Vscode*
+<img width="1280" alt="cocom_tutorial" src="tutorial_vscode.gif" />
 
 ---
 
