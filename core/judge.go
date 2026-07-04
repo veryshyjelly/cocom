@@ -37,6 +37,11 @@ func (app App) compile() (string, error) {
 	err = os.WriteFile(filePath, []byte(solutionFile), 0644)
 	Unwrap("unable to write solution file", err)
 
+	if app.Compile == "" {
+		log.Info("No solution compilation required.")
+		return dir, nil
+	}
+
 	var stderr bytes.Buffer
 	log.Info("Starting compilation", "compiler", app.Compile, "args", app.Compiler.Args)
 	cmd := exec.Command(app.Compile, app.Compiler.Args...)
