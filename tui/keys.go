@@ -3,18 +3,20 @@ package tui
 import "charm.land/bubbles/v2/key"
 
 type KeyMap struct {
-	Quit         key.Binding
-	Run          key.Binding
-	CreateFile   key.Binding
-	CopyFile     key.Binding
-	AddCase      key.Binding
-	InputAnswer  key.Binding
-	InputOutput  key.Binding
-	InputError   key.Binding
-	AnswerOutput key.Binding
-	NextCase     key.Binding
-	PreviousCase key.Binding
-	Help         key.Binding
+	Quit             key.Binding
+	Run              key.Binding
+	CreateFile       key.Binding
+	CopyFile         key.Binding
+	AddCase          key.Binding
+	InputAnswer      key.Binding
+	InputOutput      key.Binding
+	InputError       key.Binding
+	AnswerOutput     key.Binding
+	NextCase         key.Binding
+	PreviousCase     key.Binding
+	Help             key.Binding
+	HorizontalLayout key.Binding
+	VerticalLayout   key.Binding
 }
 
 // ShortHelp returns a slice of key bindings to be displayed in the Bubble Tea
@@ -29,8 +31,8 @@ func (k KeyMap) ShortHelp() []key.Binding {
 // for the Bubble Tea help bubble's expanded, full-screen view.
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Run, k.CreateFile, k.CopyFile, k.AddCase, k.PreviousCase, k.NextCase},
-		{k.InputAnswer, k.InputOutput, k.InputError, k.AnswerOutput, k.Help, k.Quit},
+		{k.Quit, k.Run, k.CreateFile, k.CopyFile, k.AddCase, k.PreviousCase, k.NextCase},
+		{k.InputAnswer, k.InputOutput, k.InputError, k.AnswerOutput, k.Help, k.HorizontalLayout, k.VerticalLayout},
 	}
 }
 
@@ -59,4 +61,8 @@ var DefaultKeyMap = KeyMap{
 		key.WithHelp("◀/⇧⇥", "previous case")),
 	Help: key.NewBinding(key.WithKeys("?"),
 		key.WithHelp("?", "toggle help")),
+	HorizontalLayout: key.NewBinding(key.WithKeys("ctrl+h"),
+		key.WithHelp("ctrl+h", "horizontal layout")),
+	VerticalLayout: key.NewBinding(key.WithKeys("ctrl+v"),
+		key.WithHelp("ctrl+v", "vertical layout")),
 }

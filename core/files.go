@@ -51,7 +51,7 @@ func (app App) CreateFile() tea.Msg {
 		log.Debug("Rendering template modifier")
 		err = template.Must(template.New("template").
 			Funcs(funcMap).
-			Parse(modifier)).Execute(file, map[string]interface{}{
+			Parse(modifier)).Execute(file, map[string]any{
 			"Author": app.Author,
 			"Time":   time.Now().Format("2006/01/02 15:04"),
 			"Url":    app.Url,
@@ -74,7 +74,7 @@ func (app App) OpenEditor() tea.Cmd {
 	var editor bytes.Buffer
 	err := template.Must(template.New("editor").
 		Funcs(funcMap).
-		Parse(app.Config.Editor)).Execute(&editor, map[string]interface{}{
+		Parse(app.Config.Editor)).Execute(&editor, map[string]any{
 		"Filename": filename,
 	})
 	Unwrap("couldn't render editor template", err)
@@ -134,7 +134,7 @@ func (app App) GetFileName() string {
 	var buffer bytes.Buffer
 
 	cleanedTitle := strings.NewReplacer("'", "", "\"", "").Replace(app.Title)
-	err = nameTemplate.Execute(&buffer, map[string]interface{}{
+	err = nameTemplate.Execute(&buffer, map[string]any{
 		"Captures": captures,
 		"Title":    cleanedTitle,
 	})

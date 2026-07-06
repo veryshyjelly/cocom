@@ -25,7 +25,8 @@ type Model struct {
 	leftViewPort  viewport.Model
 	rightViewPort viewport.Model
 
-	mode Mode
+	mode        Mode
+	orientation Orientation
 }
 
 type Mode int
@@ -37,14 +38,22 @@ const (
 	AnswerOutput
 )
 
+type Orientation int
+
+const (
+	Horizontal Orientation = iota
+	Vertical
+)
+
 // NewModel initializes and returns a new Bubble Tea Model with the provided
 // project root directory and application configuration. It sets the initial
 // execution status to NotAvailable.
 func NewModel(root string, config config.Config, fileChan chan string) Model {
 	log.Info("Initializing new model", "root", root)
 	return Model{
-		App:      core.App{Root: root, Config: config},
-		fileChan: fileChan,
+		App:         core.App{Root: root, Config: config},
+		fileChan:    fileChan,
+		orientation: Horizontal,
 	}
 }
 
@@ -101,6 +110,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, DefaultKeyMap.Help):
 			hi := Help{parent: m, height: m.height, width: m.width}
 			return hi, nil
+		case key.Matches(msg, DefaultKeyMap.HorizontalLayout):
+			m.orientation = Horizontal
+			m = m.setLayout()
+		case key.Matches(msg, DefaultKeyMap.VerticalLayout):
+			m.orientation = Vertical
+			m = m.setLayout()
 		}
 	case tea.MouseMsg:
 		if m.rightPane.Contains(msg.Mouse().X, msg.Mouse().Y) {
@@ -188,30 +203,43 @@ func (m Model) updatePanes() Model {
 // setLayout recalculates and applies the dimensions, padding, and coordinates
 // for the split-pane UI layout based on the current terminal window size.
 func (m Model) setLayout() Model {
-	m.leftPane = Rect{
-		X: 0,
-		Y: 5,
-		// 2 for padding and 2 for border
-		W: m.width/2 - 4,
-		// 2 for border 2 for heading and 1 for status
-		H: m.height - 5,
-	}
-	// 1 for label
-	m.leftViewPort.SetHeight(m.leftPane.H - 1)
-	m.leftViewPort.SetWidth(m.leftPane.W)
+	if m.orientation == Vertical {
+		m.leftPane = Rect{
+			X: 0,
+			Y: 5,
+			W: m.width - 4,
+			H: (m.height - 5) / 2,
+		}
+		m.leftViewPort.SetHeight(m.leftPane.H - 1)
+		m.leftViewPort.SetWidth(m.leftPane.W)
 
-	m.rightPane = Rect{
-		X: (m.width + 1) / 2,
-		Y: 5,
-		// 2 for padding and 2 for border
-		W: m.width/2 - 4,
-		// 2 for border 2 for heading and 1 for status
-		H: m.height - 5,
-	}
-	// 1 for label
-	m.rightViewPort.SetHeight(m.rightPane.H - 1)
-	m.rightViewPort.SetWidth(m.rightPane.W)
+		m.rightPane = Rect{
+			X: 0,
+			Y: 5 + (m.height-5)/2 + 1,
+			W: m.width - 4,
+			H: (m.height - 5) / 2,
+		}
+		m.rightViewPort.SetHeight(m.rightPane.H - 1)
+		m.rightViewPort.SetWidth(m.rightPane.W)
+	} else {
+		m.leftPane = Rect{
+			X: 0,
+			Y: 5,
+			W: m.width/2 - 4,
+			H: m.height - 5,
+		}
+		m.leftViewPort.SetHeight(m.leftPane.H - 1)
+		m.leftViewPort.SetWidth(m.leftPane.W)
 
+		m.rightPane = Rect{
+			X: (m.width + 1) / 2,
+			Y: 5,
+			W: m.width/2 - 4,
+			H: m.height - 5,
+		}
+		m.rightViewPort.SetHeight(m.rightPane.H - 1)
+		m.rightViewPort.SetWidth(m.rightPane.W)
+	}
 	return m
 }
 

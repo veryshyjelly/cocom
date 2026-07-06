@@ -95,7 +95,26 @@ func (m Model) renderMiddle() *lipgloss.Layer {
 // renderBody renders the main body layer containing the side-by-side split viewports.
 // It dynamically labels the panes based on the current viewing mode (e.g., "Input" vs "Output").
 func (m Model) renderBody() *lipgloss.Layer {
-	h, w := m.height-5, m.width/2
+	var h, w int
+	var leftX, leftY int
+	var rightX, rightY int
+
+	if m.orientation == Vertical {
+		h = (m.height - 5) / 2
+		w = m.width
+		leftX = 0
+		leftY = 0
+		rightX = 0
+		rightY = (m.height-5)/2 + 1
+	} else {
+		h = m.height - 5
+		w = m.width / 2
+		leftX = 0
+		leftY = 0
+		rightX = (m.width + 1) / 2
+		rightY = 0
+	}
+
 	style := textAreaStyle.Height(h).Width(w)
 
 	// select the appropriate labels
@@ -114,7 +133,8 @@ func (m Model) renderBody() *lipgloss.Layer {
 				m.leftViewPort.View(),
 			),
 		),
-	)
+	).X(leftX).Y(leftY)
+
 	// Create output layer
 	rightLayer := lipgloss.NewLayer(
 		style.Render(
@@ -123,8 +143,7 @@ func (m Model) renderBody() *lipgloss.Layer {
 				m.rightViewPort.View(),
 			),
 		),
-	).
-		X((m.width + 1) / 2)
+	).X(rightX).Y(rightY)
 
 	return lipgloss.NewLayer("", leftLayer, rightLayer).Y(3)
 }
