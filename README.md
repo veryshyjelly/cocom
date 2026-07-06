@@ -24,6 +24,8 @@
 ---
 
 ## 🎥 Demo
+> *Preview with Zed*
+<img width="1280" alt="cocom_tutorial" src="use_with_zed.png" />
 
 > *Example workflow using Neovim*
 <img width="1280" alt="cocom_tutorial" src="tutorial_nvim.gif" />
