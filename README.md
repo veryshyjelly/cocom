@@ -82,12 +82,13 @@ editor: "code {{ .Filename }}"
 # Rules for generating filenames based on problem URLs
 filename:
   rules:
-    - site: open.kattis.com
-      regex: "problems/([^/?]+)/?"
-      template: "./src/bin/{{ index .Captures 1 }}.ml"
     - site: codeforces.com
-      regex: "problemset/problem/([0-9]+)/([A-Za-z0-9]+)"
-      template: "./src/cf/{{ index .Captures 1 }}{{ index .Captures 2 }}.ml"
+      regex: "(?:problemset/problem|contest|gym)/(\\d+)(?:/problem)?/([A-Za-z0-9]+)"
+      template: './src/bin/{{ index .Captures 1 }}-{{ index .Captures 2 }}-{{ .Title | stripPrefix "."  | toKebabCase }}.rs'
+      
+    - site: atcoder.jp
+      regex: "contests/([^/]+)/tasks/([^_]+)_([a-z]+)"
+      template: './src/bin/{{ index .Captures 2 }}-{{ index .Captures 3 | toLowerCase }}{{if gt (.Title | stripPrefix "-" | len) 0}}-{{ .Title | stripPrefix "-"  | toKebabCase }}{{- end -}}.rs'
 
 # Base template for newly created files
 template:
