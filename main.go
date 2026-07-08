@@ -21,10 +21,11 @@ import (
 
 // CLI represents the command-line interface arguments and flags for the application.
 type CLI struct {
-	Config  string `help:"Path to the configuration file." default:"./cocom.yml" short:"c"`
-	Root    string `help:"Project root directory." default:"." short:"C" type:"existingdir"`
-	Version bool   `help:"Show version information." short:"v"`
-	Debug   bool   `help:"Show debug information." short:"d"`
+	Config   string `help:"Path to the configuration file." default:"./cocom.yml" short:"c"`
+	Root     string `help:"Project root directory." default:"." short:"C" type:"existingdir"`
+	Vertical bool   `help:"Open in vertical mode." short:"l"`
+	Version  bool   `help:"Show version information." short:"v"`
+	Debug    bool   `help:"Show debug information." short:"d"`
 }
 
 func main() {
@@ -92,7 +93,11 @@ func main() {
 
 	// initiate model and tea program, then start the fileloop
 	fileChan := make(chan string, 10)
-	model := tui.NewModel(cli.Root, cfg, fileChan)
+	var orientation tui.Orientation
+	if cli.Vertical {
+		orientation = tui.Vertical
+	}
+	model := tui.NewModel(cli.Root, cfg, orientation, fileChan)
 	p := tea.NewProgram(tui.NewSplash(model))
 	go watcher.FileLoop(w, p, cli.Root, fileChan)
 

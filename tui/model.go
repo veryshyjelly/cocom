@@ -48,12 +48,12 @@ const (
 // NewModel initializes and returns a new Bubble Tea Model with the provided
 // project root directory and application configuration. It sets the initial
 // execution status to NotAvailable.
-func NewModel(root string, config config.Config, fileChan chan string) Model {
+func NewModel(root string, config config.Config, orientation Orientation, fileChan chan string) Model {
 	log.Info("Initializing new model", "root", root)
 	return Model{
 		App:         core.App{Root: root, Config: config},
 		fileChan:    fileChan,
-		orientation: Horizontal,
+		orientation: orientation,
 	}
 }
 
