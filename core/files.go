@@ -55,6 +55,8 @@ func (app App) CreateFile() tea.Msg {
 			"Author": app.Author,
 			"Time":   time.Now().Format("2006/01/02 15:04"),
 			"Url":    app.Url,
+			"Title":  app.Title,
+			"Filename": filenameWithoutExt(app.GetFileName()),
 			"Code":   string(templ),
 		})
 		Unwrap("couldn't write template", err)
@@ -62,6 +64,11 @@ func (app App) CreateFile() tea.Msg {
 
 	log.Info("Successfully created file", "filename", filename)
 	return nil
+}
+
+func filenameWithoutExt(path string) string {
+	base := filepath.Base(path)
+	return strings.TrimSuffix(base, filepath.Ext(base))
 }
 
 // OpenEditor constructs and executes an external editor command to open the current problem's file.
