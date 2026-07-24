@@ -93,7 +93,7 @@ func (app App) OpenEditor() tea.Cmd {
 
 // CopyFile copies the final solution to clipboard
 func (app App) CopyFile() tea.Msg {
-	err := clipboard.WriteAll(app.getSolution())
+	err := clipboard.WriteAll(app.GetSolution())
 	if err != nil {
 		log.Fatal(err)
 	}

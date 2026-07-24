@@ -8,6 +8,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/veryshyjelly/cocom/config"
 	"github.com/veryshyjelly/cocom/core"
+	"github.com/veryshyjelly/cocom/server"
 )
 
 type Model struct {
@@ -88,6 +89,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case key.Matches(msg, DefaultKeyMap.CopyFile):
 			log.Info("Copy file command triggered")
+			server.Solution = true
+			server.App = m.App
 			m.fileChanged = false
 			return m, m.CopyFile
 		case key.Matches(msg, DefaultKeyMap.AddCase):

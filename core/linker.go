@@ -25,11 +25,11 @@ type node struct {
 	deps    []string
 }
 
-// getSolution orchestrates the final code generation process for submission.
+// GetSolution orchestrates the final code generation process for submission.
 // It reads the main source file, resolves and topologically sorts library dependencies,
 // extracts and deduplicates header blocks (e.g., #includes), and merges everything
 // into a single, deployable source code string using a configured template modifier.
-func (app App) getSolution() string {
+func (app App) GetSolution() string {
 	log.Debug("Generating final solution string")
 	code, err := os.ReadFile(filepath.Join(app.Root, app.GetFileName()))
 	Unwrap("couldn't read file in getSolution", err)
@@ -64,7 +64,7 @@ func (app App) getSolution() string {
 	log.Debug("Executing solution template modifier")
 	err = template.Must(template.New("template").
 		Funcs(funcMap).Parse(app.Code.Modifier)).
-		Execute(&solution, map[string]interface{}{
+		Execute(&solution, map[string]any{
 			"Author":   app.Author,
 			"Url":      app.Url,
 			"Time":     time.Now().Format("2006/01/02 15:04"),
@@ -104,7 +104,7 @@ func (app App) linkFiles() []Library {
 	for _, n := range nodes {
 		for dep := range nodes {
 			thisRegex.Reset()
-			err = regTemplate.Execute(&thisRegex, map[string]interface{}{"Name": dep})
+			err = regTemplate.Execute(&thisRegex, map[string]any{"Name": dep})
 			Unwrap("couldn't generate libcheck regex from template", err)
 			if re := regexp.MustCompile(thisRegex.String()); re.MatchString(n.content) {
 				n.deps = append(n.deps, dep)
@@ -116,7 +116,7 @@ func (app App) linkFiles() []Library {
 	var roots []string
 	for name := range nodes {
 		thisRegex.Reset()
-		err = regTemplate.Execute(&thisRegex, map[string]interface{}{"Name": name})
+		err = regTemplate.Execute(&thisRegex, map[string]any{"Name": name})
 		log.Debug("Regex for ", "node", name, "regex", thisRegex.String())
 		Unwrap("couldn't generate libcheck regex from template", err)
 		if re := regexp.MustCompile(thisRegex.String()); re.Match(rootFile) {
@@ -137,10 +137,11 @@ func (app App) linkFiles() []Library {
 	// topological sort
 	var dfs func(string)
 	dfs = func(name string) {
-		if state[name] == gray {
+		switch state[name] {
+		case gray:
 			log.Error("Cyclic library dependency detected", "node", name)
 			os.Exit(1)
-		} else if state[name] == black {
+		case black:
 			return
 		}
 		state[name] = gray

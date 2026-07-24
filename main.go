@@ -102,6 +102,7 @@ func main() {
 	go watcher.FileLoop(w, p, cli.Root, fileChan)
 
 	http.HandleFunc("/", server.HandleData(p))
+	http.HandleFunc("/submit", server.HandleSubmit)
 	go func() {
 		log.Info("Starting HTTP server", "addr", "127.0.0.1:6174")
 		err := http.ListenAndServe("127.0.0.1:6174", nil)

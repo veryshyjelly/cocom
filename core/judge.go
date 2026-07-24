@@ -30,7 +30,7 @@ func (app App) compile() (string, error) {
 	Unwrap("unable to create temporary directory", err)
 
 	log.Debug("Sandbox directory created", "path", dir)
-	solutionFile := app.getSolution()
+	solutionFile := app.GetSolution()
 	filePath := filepath.Join(dir, app.Compiler.Source)
 
 	log.Debug("Writing solution to sandbox", "file", filePath)

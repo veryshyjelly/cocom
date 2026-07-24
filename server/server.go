@@ -9,6 +9,11 @@ import (
 	"github.com/veryshyjelly/cocom/core"
 )
 
+var (
+	Solution bool = false
+	App core.App
+)
+
 // HandleData returns an HTTP handler function that listens for incoming JSON payloads
 // from the Competitive Companion browser extension. It parses the problem data and
 // injects it into the Bubble Tea event loop via the provided Program instance.
@@ -28,4 +33,33 @@ func HandleData(p *tea.Program) func(http.ResponseWriter, *http.Request) {
 		p.Send(data)
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+type Submission struct {
+    Empty bool `json:"empty"`
+    ProblemName string `json:"problemName"`
+    Url string `json:"url"`
+    SourceCode string `json:"sourceCode"`
+    FileName string `json:"fileName"`
+}
+
+func HandleSubmit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if !Solution {
+		json.NewEncoder(w).Encode(Submission {
+			Empty: true,
+		})
+		return
+	}
+
+	Solution = false
+
+	json.NewEncoder(w).Encode(Submission {
+		Empty: Solution,
+		SourceCode: App.GetSolution(),
+		Url: App.Url,
+		FileName: App.GetFileName(),
+		ProblemName: App.Title,
+	})
 }
