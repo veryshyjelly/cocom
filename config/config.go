@@ -54,8 +54,8 @@ type Compiler struct {
 }
 
 // ReadConfig reads and parses a YAML configuration file from the specified path.
-// It decodes the file's content into a Config struct, validating the structure
-// of the competitive programming environment settings.
+// It decodes the file's content into a Config struct. Use Validate to check
+// that required fields and paths are correct before starting the application.
 //
 // Returns the populated Config struct and an error if the file cannot be opened
 // or if the YAML decoding fails.

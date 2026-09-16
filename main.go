@@ -65,10 +65,10 @@ func main() {
 		err := huh.NewSelect[string]().
 			Title("Pick a language (doesn't matter just pick one).").
 			Options(
-				huh.NewOption[string]("C++", "cpp"),
-				huh.NewOption[string]("Rust", "rust"),
-				huh.NewOption[string]("Python", "python"),
-				huh.NewOption[string]("Ocaml", "ocaml"),
+				huh.NewOption("C++", "cpp"),
+				huh.NewOption("Rust", "rust"),
+				huh.NewOption("Python", "python"),
+				huh.NewOption("Ocaml", "ocaml"),
 			).Value(&language).
 			Run()
 		core.Unwrap("can't get language of choice", err)
@@ -83,6 +83,11 @@ func main() {
 		os.Exit(0)
 	} else if err != nil {
 		core.Unwrap("failed to decode config file", err)
+	}
+
+	if err := config.Validate(cfg, cli.Root, cli.Config); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 	log.Debug("successfully loaded config", "config", cfg)
 

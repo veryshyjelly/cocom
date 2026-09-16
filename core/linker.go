@@ -12,6 +12,7 @@ import (
 
 	"charm.land/log/v2"
 	"github.com/samber/lo"
+	"github.com/veryshyjelly/cocom/tmpl"
 )
 
 type Library struct {
@@ -63,7 +64,7 @@ func (app App) GetSolution() string {
 	var solution bytes.Buffer
 	log.Debug("Executing solution template modifier")
 	err = template.Must(template.New("template").
-		Funcs(funcMap).Parse(app.Code.Modifier)).
+		Funcs(tmpl.FuncMap).Parse(app.Code.Modifier)).
 		Execute(&solution, map[string]any{
 			"Author":   app.Author,
 			"Url":      app.Url,
@@ -97,7 +98,7 @@ func (app App) linkFiles() []Library {
 			}
 		})
 
-	regTemplate := template.Must(template.New("libReg").Funcs(funcMap).Parse(app.Lib.Regex))
+	regTemplate := template.Must(template.New("libReg").Funcs(tmpl.FuncMap).Parse(app.Lib.Regex))
 	var thisRegex bytes.Buffer
 
 	log.Debug("Building dependency graph")
