@@ -5,34 +5,9 @@ import (
 	"os"
 	"slices"
 	"strings"
-	"text/template"
 
 	"charm.land/log/v2"
-	"github.com/ettle/strcase"
 )
-
-var funcMap = template.FuncMap{
-	"toKebabCase":  strcase.ToKebab,
-	"toCamelCase":  strcase.ToCamel,
-	"toSnakeCase":  strcase.ToSnake,
-	"toPascalCase": strcase.ToPascal,
-	"toKEBABCase":  strcase.ToKEBAB,
-	"toSNAKECase":  strcase.ToSNAKE,
-	"toLowerCase":  strings.ToLower,
-	"toUpperCase":  strings.ToUpper,
-	"stripPrefix":  stripPrefix,
-}
-
-// stripPrefix removes a prefix from a string up to the first occurrence of a
-// specified delimiter, returning the trimmed remainder. Primarily used for
-// cleaning up problem titles fetched from competitive programming platforms.
-func stripPrefix(delim, title string) string {
-	parts := strings.SplitN(title, delim, 2)
-	if len(parts) == 2 {
-		return strings.TrimSpace(parts[1])
-	}
-	return title
-}
 
 // extractBlock parses a source code string to extract a specific block of text
 // enclosed between `@tag begin` and `@tag end` markers.

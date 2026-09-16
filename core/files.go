@@ -17,6 +17,7 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/google/shlex"
 	"github.com/veryshyjelly/cocom/config"
+	"github.com/veryshyjelly/cocom/tmpl"
 )
 
 // CreateFile generates a boilerplate source code file based on the current problem's
@@ -50,7 +51,7 @@ func (app App) CreateFile() tea.Msg {
 		modifier := app.Template.Modifier
 		log.Debug("Rendering template modifier")
 		err = template.Must(template.New("template").
-			Funcs(funcMap).
+			Funcs(tmpl.FuncMap).
 			Parse(modifier)).Execute(file, map[string]any{
 			"Author": app.Author,
 			"Time":   time.Now().Format("2006/01/02 15:04"),
@@ -80,7 +81,7 @@ func (app App) OpenEditor() tea.Cmd {
 	filename := filepath.Join(app.Root, app.GetFileName())
 	var editor bytes.Buffer
 	err := template.Must(template.New("editor").
-		Funcs(funcMap).
+		Funcs(tmpl.FuncMap).
 		Parse(app.Config.Editor)).Execute(&editor, map[string]any{
 		"Filename": filename,
 	})
@@ -128,7 +129,7 @@ func (app App) GetFileName() string {
 
 	// parse template for this rule
 	nameTemplate := template.Must(template.New("filename").
-		Funcs(funcMap).
+		Funcs(tmpl.FuncMap).
 		Parse(app.Rules[index].Template))
 
 	// capture url parts using provided regex
