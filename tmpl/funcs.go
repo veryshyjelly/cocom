@@ -18,6 +18,16 @@ var FuncMap = template.FuncMap{
 	"toLowerCase":  strings.ToLower,
 	"toUpperCase":  strings.ToUpper,
 	"stripPrefix":  stripPrefix,
+	"removeLines":  removeLines,
+}
+
+// removeLines removes the first n lines from a given string.
+func removeLines(n int, s string) string {
+	lines := strings.Split(s, "\n")
+	if n >= len(lines) {
+		return ""
+	}
+	return strings.Join(lines[n:], "\n")
 }
 
 func stripPrefix(delim, title string) string {

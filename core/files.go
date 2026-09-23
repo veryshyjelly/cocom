@@ -53,12 +53,12 @@ func (app App) CreateFile() tea.Msg {
 		err = template.Must(template.New("template").
 			Funcs(tmpl.FuncMap).
 			Parse(modifier)).Execute(file, map[string]any{
-			"Author": app.Author,
-			"Time":   time.Now().Format("2006/01/02 15:04"),
-			"Url":    app.Url,
-			"Title":  app.Title,
+			"Author":   app.Author,
+			"Time":     time.Now().Format("2006/01/02 15:04"),
+			"Url":      app.Url,
+			"Title":    app.Title,
 			"Filename": filenameWithoutExt(app.GetFileName()),
-			"Code":   string(templ),
+			"Code":     string(templ),
 		})
 		Unwrap("couldn't write template", err)
 	}
