@@ -11,7 +11,7 @@ import (
 
 var (
 	Solution bool = false
-	App core.App
+	App      core.App
 )
 
 // HandleData returns an HTTP handler function that listens for incoming JSON payloads
@@ -36,30 +36,38 @@ func HandleData(p *tea.Program) func(http.ResponseWriter, *http.Request) {
 }
 
 type Submission struct {
-    Empty bool `json:"empty"`
-    ProblemName string `json:"problemName"`
-    Url string `json:"url"`
-    SourceCode string `json:"sourceCode"`
-    FileName string `json:"fileName"`
+	Empty       bool   `json:"empty"`
+	ProblemName string `json:"problemName"`
+	Url         string `json:"url"`
+	SourceCode  string `json:"sourceCode"`
+	FileName    string `json:"fileName"`
 }
 
 func HandleSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if !Solution {
-		json.NewEncoder(w).Encode(Submission {
+		json.NewEncoder(w).Encode(Submission{
 			Empty: true,
 		})
 		return
 	}
 
 	Solution = false
+	var sourceCode string
 
-	json.NewEncoder(w).Encode(Submission {
-		Empty: Solution,
-		SourceCode: App.GetSolution(),
-		Url: App.Url,
-		FileName: App.GetFileName(),
+	compiledFileContent := App.GetCompiledFileContent()
+	if compiledFileContent != "" {
+		sourceCode = compiledFileContent
+	} else {
+		sourceCode = App.GetSolution()
+	}
+
+	json.NewEncoder(w).Encode(Submission{
+		Empty:       Solution,
+		SourceCode:  sourceCode,
+		Url:         App.Url,
+		FileName:    App.GetFileName(),
 		ProblemName: App.Title,
 	})
 }

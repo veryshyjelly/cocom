@@ -99,8 +99,50 @@ func (app App) OpenEditor() tea.Cmd {
 	})
 }
 
-// CopyFile copies the final solution to clipboard
+// GetCompiledFileContent returns the content of the compiled file if CompiledFile
+// is configured in the config, otherwise it returns an empty string.
+// The function handles compilation and sandbox directory cleanup automatically.
+func (app App) GetCompiledFileContent() string {
+	if app.Config.CompiledFile == "" {
+		return ""
+	}
+
+	sandboxDir, err := app.compile()
+	if err != nil {
+		log.Error("Compilation failed", "err", err)
+		return ""
+	}
+	defer os.RemoveAll(sandboxDir)
+
+	compiledFilePath := filepath.Join(sandboxDir, app.Config.CompiledFile)
+	log.Debug("Reading compiled file", "path", compiledFilePath)
+	fileContent, err := os.ReadFile(compiledFilePath)
+	if err != nil {
+		log.Error("Failed to read compiled file", "err", err)
+		return ""
+	}
+
+	return string(fileContent)
+}
+
+// CopyFile copies the final solution to clipboard.
+// If app.Config.CompiledFile is set, it first compiles the solution
+// and then copies the file at the CompiledFile path (relative to the
+// compilation sandbox directory). Otherwise, it copies the current
+// solution as before.
 func (app App) CopyFile() tea.Msg {
+	if content := app.GetCompiledFileContent(); content != "" {
+		log.Info("CompiledFile is set, copying specified file")
+		err := clipboard.WriteAll(content)
+		if err != nil {
+			log.Error("Failed to write to clipboard", "err", err)
+			return nil
+		}
+		log.Info("Successfully copied compiled file to clipboard")
+		return nil
+	}
+
+	log.Debug("Copying current solution file")
 	err := clipboard.WriteAll(app.GetSolution())
 	if err != nil {
 		log.Fatal(err)

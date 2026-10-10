@@ -19,6 +19,11 @@ type Config struct {
 	Compiler   `yaml:"compiler"`
 	CreateFile bool `yaml:"create_file"`
 	RunOnSave  bool `yaml:"run_on_save"`
+	// CompiledFile is an optional file path that, when set, will be copied
+	// to the clipboard every time the copy shortcut (c) is pressed.
+	// If set, the application will first compile the solution, then copy
+	// the file at this path (relative to the compilation sandbox directory).
+	CompiledFile string `yaml:"compiled_file"`
 }
 
 type Filename struct {
