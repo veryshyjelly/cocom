@@ -72,7 +72,7 @@ func Unwrap(message string, err error) {
 				"\x1b[?2004l"+ // Disable bracketed paste
 				"\x1b[?1l"+ // Normal cursor keys
 				"\x1b>"+ // Normal keypad mode
-				"Please see $TMPDIR/cocom.log\r\n",
+				"Please see $TMPDIR/eitri.log\r\n",
 		)
 		log.Fatal(message, "err", err)
 	}

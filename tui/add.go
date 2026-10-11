@@ -4,7 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"charm.land/log/v2"
-	"github.com/veryshyjelly/cocom/core"
+	"github.com/veryshyjelly/eitri/core"
 )
 
 type AddTestCase struct {

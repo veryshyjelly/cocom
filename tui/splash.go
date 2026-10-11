@@ -5,7 +5,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/veryshyjelly/cocom/core"
+	"github.com/veryshyjelly/eitri/core"
 )
 
 // Splash is used to display the landing page until we get our first info

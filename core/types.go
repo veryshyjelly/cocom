@@ -1,6 +1,6 @@
 package core
 
-import "github.com/veryshyjelly/cocom/config"
+import "github.com/veryshyjelly/eitri/config"
 
 type App struct {
 	Root string

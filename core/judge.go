@@ -15,7 +15,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
 	"github.com/google/shlex"
-	"github.com/veryshyjelly/cocom/memory"
+	"github.com/veryshyjelly/eitri/memory"
 )
 
 // compile builds the generated solution code in an isolated, temporary sandbox directory.

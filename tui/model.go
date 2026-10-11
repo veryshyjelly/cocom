@@ -6,9 +6,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/log/v2"
 	"github.com/fsnotify/fsnotify"
-	"github.com/veryshyjelly/cocom/config"
-	"github.com/veryshyjelly/cocom/core"
-	"github.com/veryshyjelly/cocom/server"
+	"github.com/veryshyjelly/eitri/config"
+	"github.com/veryshyjelly/eitri/core"
+	"github.com/veryshyjelly/eitri/server"
 )
 
 type Model struct {

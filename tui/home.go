@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/veryshyjelly/cocom/core"
+	"github.com/veryshyjelly/eitri/core"
 )
 
 // View renders the current state of the application into a Bubble Tea View.

@@ -11,17 +11,17 @@ import (
 	"charm.land/log/v2"
 	"github.com/alecthomas/kong"
 	"github.com/fsnotify/fsnotify"
-	"github.com/veryshyjelly/cocom/config"
-	"github.com/veryshyjelly/cocom/core"
-	"github.com/veryshyjelly/cocom/server"
-	"github.com/veryshyjelly/cocom/templates"
-	"github.com/veryshyjelly/cocom/tui"
-	"github.com/veryshyjelly/cocom/watcher"
+	"github.com/veryshyjelly/eitri/config"
+	"github.com/veryshyjelly/eitri/core"
+	"github.com/veryshyjelly/eitri/server"
+	"github.com/veryshyjelly/eitri/templates"
+	"github.com/veryshyjelly/eitri/tui"
+	"github.com/veryshyjelly/eitri/watcher"
 )
 
 // CLI represents the command-line interface arguments and flags for the application.
 type CLI struct {
-	Config   string `help:"Path to the configuration file." default:"./cocom.yml" short:"c"`
+	Config   string `help:"Path to the configuration file." default:"./eitri.yml" short:"c"`
 	Root     string `help:"Project root directory." default:"." short:"C" type:"existingdir"`
 	Vertical bool   `help:"Open in vertical mode." short:"l"`
 	Version  bool   `help:"Show version information." short:"v"`
@@ -31,17 +31,17 @@ type CLI struct {
 func main() {
 	var cli CLI
 	kong.Parse(&cli,
-		kong.Name("cocom"),
+		kong.Name("eitri"),
 		kong.Description("Competitive programming companion."),
 	)
 
 	if cli.Version {
-		fmt.Println("cocom version 0.1.0")
+		fmt.Println("eitri version 0.1.0")
 		return
 	}
 
 	// Initialize comprehensive logging
-	logPath := filepath.Join(os.TempDir(), "cocom.log")
+	logPath := filepath.Join(os.TempDir(), "eitri.log")
 	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("failed to open log file: %v\n", err)

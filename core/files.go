@@ -16,8 +16,8 @@ import (
 	"charm.land/log/v2"
 	"github.com/atotto/clipboard"
 	"github.com/google/shlex"
-	"github.com/veryshyjelly/cocom/config"
-	"github.com/veryshyjelly/cocom/tmpl"
+	"github.com/veryshyjelly/eitri/config"
+	"github.com/veryshyjelly/eitri/tmpl"
 )
 
 // CreateFile generates a boilerplate source code file based on the current problem's

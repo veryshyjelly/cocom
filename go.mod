@@ -1,4 +1,4 @@
-module github.com/veryshyjelly/cocom
+module github.com/veryshyjelly/eitri
 
 go 1.25.11
 

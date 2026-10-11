@@ -10,10 +10,10 @@ import (
 	"text/template"
 
 	"github.com/google/shlex"
-	"github.com/veryshyjelly/cocom/tmpl"
+	"github.com/veryshyjelly/eitri/tmpl"
 )
 
-const configDocsURL = "https://github.com/veryshyjelly/cocom#-configuration-cocomyml"
+const configDocsURL = "https://github.com/veryshyjelly/eitri#-configuration-eitriyml"
 
 // Issue describes a single configuration problem.
 type Issue struct {

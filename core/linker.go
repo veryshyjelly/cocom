@@ -12,7 +12,7 @@ import (
 
 	"charm.land/log/v2"
 	"github.com/samber/lo"
-	"github.com/veryshyjelly/cocom/tmpl"
+	"github.com/veryshyjelly/eitri/tmpl"
 )
 
 type Library struct {

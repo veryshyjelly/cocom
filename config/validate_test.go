@@ -69,7 +69,7 @@ func TestValidateValidConfig(t *testing.T) {
 	root := setupValidRoot(t)
 	cfg := validConfig()
 
-	if err := Validate(cfg, root, "./cocom.yml"); err != nil {
+	if err := Validate(cfg, root, "./eitri.yml"); err != nil {
 		t.Fatalf("expected valid config, got: %v", err)
 	}
 }
@@ -82,7 +82,7 @@ func TestValidateMissingTemplateOnRule(t *testing.T) {
 		Regex: "problem/([^/?]+)?",
 	})
 
-	err := Validate(cfg, root, "./cocom.yml")
+	err := Validate(cfg, root, "./eitri.yml")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -112,7 +112,7 @@ func TestValidateInvalidRegex(t *testing.T) {
 	cfg := validConfig()
 	cfg.Rules[0].Regex = "(unclosed"
 
-	err := Validate(cfg, root, "./cocom.yml")
+	err := Validate(cfg, root, "./eitri.yml")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -135,7 +135,7 @@ func TestValidateTemplateEndingWithSeparator(t *testing.T) {
 	cfg := validConfig()
 	cfg.Rules[0].Template = "./src/bin/"
 
-	err := Validate(cfg, root, "./cocom.yml")
+	err := Validate(cfg, root, "./eitri.yml")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -157,7 +157,7 @@ func TestValidateTemplateRendersToEmptyString(t *testing.T) {
 	cfg := validConfig()
 	cfg.Rules[0].Template = "{{ if false }}file.rs{{ end }}"
 
-	err := Validate(cfg, root, "./cocom.yml")
+	err := Validate(cfg, root, "./eitri.yml")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -179,7 +179,7 @@ func TestValidateMissingCompilerRun(t *testing.T) {
 	cfg := validConfig()
 	cfg.Compiler.Run = ""
 
-	err := Validate(cfg, root, "./cocom.yml")
+	err := Validate(cfg, root, "./eitri.yml")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -202,7 +202,7 @@ func TestValidateMissingTemplateSourceFile(t *testing.T) {
 	cfg := validConfig()
 	cfg.Template.Source = "./src/missing.rs"
 
-	err := Validate(cfg, root, "./cocom.yml")
+	err := Validate(cfg, root, "./eitri.yml")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -225,7 +225,7 @@ func TestValidateMissingLibIncludePath(t *testing.T) {
 	cfg := validConfig()
 	cfg.Lib.Include["missing"] = "./src/lib/missing.rs"
 
-	err := Validate(cfg, root, "./cocom.yml")
+	err := Validate(cfg, root, "./eitri.yml")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -249,7 +249,7 @@ func TestValidateTemplateRendersToExistingDirectory(t *testing.T) {
 	cfg := validConfig()
 	cfg.Rules[0].Template = "./problem.rs"
 
-	err := Validate(cfg, root, "./cocom.yml")
+	err := Validate(cfg, root, "./eitri.yml")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -268,7 +268,7 @@ func TestValidateTemplateRendersToExistingDirectory(t *testing.T) {
 
 func TestValidationErrorFormatting(t *testing.T) {
 	err := &ValidationError{
-		ConfigPath: "./cocom.yml",
+		ConfigPath: "./eitri.yml",
 		Issues: []Issue{
 			{
 				Path:    "filename.rules[5] (site: codeforces.com)",
@@ -279,7 +279,7 @@ func TestValidationErrorFormatting(t *testing.T) {
 	}
 
 	output := err.Error()
-	if !strings.Contains(output, "Error: Invalid configuration file (./cocom.yml)") {
+	if !strings.Contains(output, "Error: Invalid configuration file (./eitri.yml)") {
 		t.Fatalf("unexpected header: %s", output)
 	}
 	if !strings.Contains(output, "filename.rules[5] (site: codeforces.com)") {
